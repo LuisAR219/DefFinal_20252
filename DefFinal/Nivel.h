@@ -16,6 +16,17 @@ public:
 
     virtual void actualizar(float dt) = 0;
 
+    virtual bool nivelCompletado() const = 0;
+
+    const QVector<EntidadJuego*>& getEntidades() const { return entidades; }
+
+protected:
+    QVector<EntidadJuego*> entidades;
+    QTimer temporizadorNivel;
+    bool completado;
+
+protected slots:
+    void onUpdate();
 };
 
 #endif // NIVEL_H

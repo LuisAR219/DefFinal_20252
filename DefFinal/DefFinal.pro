@@ -11,11 +11,13 @@ CONFIG += c++17
 SOURCES += \
     Nivel.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    nivellondres.cpp
 
 HEADERS += \
     Nivel.h \
-    mainwindow.h
+    mainwindow.h \
+    nivellondres.h
 
 FORMS += \
     mainwindow.ui

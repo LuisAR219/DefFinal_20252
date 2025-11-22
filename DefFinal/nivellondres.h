@@ -9,7 +9,11 @@ class NivelLondres : public Nivel {
     Q_OBJECT
 
 public:
-    NivelLondres();
+    explicit NivelLondres(QObject* parent = nullptr);
+
+    void inicializar() override;
+    void actualizar(float dt) override;
+    bool nivelCompletado() const override;
 
 private:
     Soldado* soldadoJugador;

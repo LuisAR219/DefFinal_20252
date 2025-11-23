@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     Nivel.cpp \
     entidadjuego.cpp \
+    entidadmovil.cpp \
     main.cpp \
     mainwindow.cpp \
     nivellondres.cpp
@@ -18,6 +19,7 @@ SOURCES += \
 HEADERS += \
     Nivel.h \
     entidadjuego.h \
+    entidadmovil.h \
     mainwindow.h \
     nivellondres.h
 

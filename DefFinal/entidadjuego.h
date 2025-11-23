@@ -26,13 +26,13 @@ public:
     // Destructor para herencia
     virtual ~EntidadJuego();
 
-    // Interfaz que deben implementar las subclases
+    // Métodos virtuales puros: toda entidad del juego debe implementar estos
     virtual void actualizar(float dt) = 0;
     virtual void aplicarFuerza(const QVector2D& fuerza) = 0;
     virtual bool colisionaCon(const EntidadJuego* otra) const = 0;
     virtual void pintar(QPainter* pintor) = 0;
 
-    // Getters / Setters
+    // Getters y Setters
     QVector2D obtenerPosicion() const;
     void establecerPosicion(const QVector2D& pos);
 
@@ -48,8 +48,12 @@ public:
     TipoEntidad obtenerTipo() const;
     void establecerTipo(TipoEntidad t);
 
+signals:
+    // Señal necesaria para que entidades como Enemigo pidan ser eliminadas
+    void solicitudEliminar(EntidadJuego* quien);
+
 protected:
-    // Estado físico básico (protegido para acceso en subclases)
+    // Variables físicas básicas
     QVector2D posicion;
     QVector2D velocidad;
     float masa;
@@ -58,4 +62,5 @@ protected:
 };
 
 #endif // ENTIDADJUEGO_H
+
 

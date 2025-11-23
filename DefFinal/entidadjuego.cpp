@@ -23,9 +23,12 @@ EntidadJuego::EntidadJuego(QObject* parent,
 
 EntidadJuego::~EntidadJuego()
 {
+    // Destructor virtual para permitir eliminación segura a través de punteros base
 }
 
+// ----------------------
 // Getters / Setters
+// ----------------------
 
 QVector2D EntidadJuego::obtenerPosicion() const {
     return posicion;
@@ -48,7 +51,11 @@ float EntidadJuego::obtenerRadioColision() const {
 }
 
 void EntidadJuego::establecerRadioColision(float radio) {
-    if (radio > 0.0f) radioColision = radio;
+    if (radio > 0.0f) {
+        radioColision = radio;
+    } else {
+        qWarning() << "EntidadJuego: intento de asignar radio no válido.";
+    }
 }
 
 float EntidadJuego::obtenerMasa() const {
@@ -56,7 +63,11 @@ float EntidadJuego::obtenerMasa() const {
 }
 
 void EntidadJuego::establecerMasa(float m) {
-    if (m > 0.0f) masa = m;
+    if (m > 0.0f) {
+        masa = m;
+    } else {
+        qWarning() << "EntidadJuego: intento de asignar masa no válida.";
+    }
 }
 
 TipoEntidad EntidadJuego::obtenerTipo() const {
@@ -66,3 +77,4 @@ TipoEntidad EntidadJuego::obtenerTipo() const {
 void EntidadJuego::establecerTipo(TipoEntidad t) {
     tipoEntidad = t;
 }
+

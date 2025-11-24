@@ -1,26 +1,23 @@
 #include "nivel1.h"
-#include "enemigo.h"
-#include "entidadfija.h"
-
 #include <QDebug>
+#include <QRandomGenerator>
 
 Nivel1::Nivel1(QObject* parent)
     : Nivel(parent),
     jugador(nullptr),
     gestorSpawn(nullptr),
     tiempoNivel(0.0f),
-    distanciaObjetivo(1800.0f)
+    distanciaObjetivo(1800.0f),
+    maxEnemigosActivos(3),
+    tiempoDesdeUltimoSpawn(0.0f),
+    intervaloSpawn(2.0f)
 {
 }
 
 Nivel1::~Nivel1()
 {
-    // Limpiar entidades del nivel
-    for (EntidadJuego* e : entidades)
-        delete e;
+    for (EntidadJuego* e : entidades) delete e;
     entidades.clear();
-
-    // gestorSpawn tiene parent = this; Qt lo liberará en cascada
 }
 
 void Nivel1::inicializar()
@@ -30,47 +27,32 @@ void Nivel1::inicializar()
     tiempoNivel = 0.0f;
     completado = false;
 
-    // Limpiar entidades previas
-    for (EntidadJuego* e : entidades)
-        delete e;
+    for (EntidadJuego* e : entidades) delete e;
     entidades.clear();
 
-    // --------------------------
-    // 1. Crear al jugador
-    // --------------------------
+    // Jugador
     jugador = new TanqueJugador(nullptr, QVector2D(400.0f, 520.0f));
     jugador->establecerLimites(80.0f, 720.0f, 20.0f, 560.0f);
     entidades.append(jugador);
 
-    // --------------------------
-    // 2. Crear el gestor de spawn
-    // --------------------------
+    // Spawn
     gestorSpawn = new ControlSpawn(this);
-
     connect(gestorSpawn, &ControlSpawn::enemigoGenerado,
             this, &Nivel1::onEnemigoGenerado);
 
     gestorSpawn->reiniciar();
 
-    // --------------------------
-    // 3. Programar eventos fijos
-    // --------------------------
+    // Podemos dejar eventos iniciales (opcional)
     SpawnEvent ev;
-
-    ev.tiempo = 1.0f;  ev.posicion = {100, 0}; ev.velocidad = 100; ev.dano = 10; ev.radio = 16;
+    ev.tiempo = 1.0f; ev.posicion = QVector2D(100, 80); ev.velocidad = 40.0f; ev.dano = 15; ev.radio = 18.0f;
     gestorSpawn->agregarEvento(ev);
 
-    ev.tiempo = 2.0f;  ev.posicion = {300, 0}; ev.velocidad = 120; ev.dano = 12; ev.radio = 18;
-    gestorSpawn->agregarEvento(ev);
-
-    ev.tiempo = 3.0f;  ev.posicion = {500, 0}; ev.velocidad = 110; ev.dano = 12; ev.radio = 18;
-    gestorSpawn->agregarEvento(ev);
-
-    ev.tiempo = 4.0f;  ev.posicion = {200, 0}; ev.velocidad = 130; ev.dano = 15; ev.radio = 18;
-    gestorSpawn->agregarEvento(ev);
-
-    ev.tiempo = 5.0f;  ev.posicion = {400, 0}; ev.velocidad = 115; ev.dano = 10; ev.radio = 16;
-    gestorSpawn->agregarEvento(ev);
+    // arranque: rellenar hasta maxEnemigosActivos con spawn aleatorio
+    for (int i = 0; i < maxEnemigosActivos; ++i) {
+        float x = 120.0f + QRandomGenerator::global()->bounded(560.0);
+        QVector2D pos(x, 80.0f);
+        gestorSpawn->generarEnemigoEn(pos);
+    }
 }
 
 void Nivel1::actualizar(float dt)
@@ -78,52 +60,53 @@ void Nivel1::actualizar(float dt)
     if (completado) return;
 
     tiempoNivel += dt;
+    tiempoDesdeUltimoSpawn += dt;
 
-    // 1. Actualizar spawn
+    // 1. Actualizar spawn programado
     gestorSpawn->actualizar(dt);
 
     // 2. Actualizar entidades
-    for (EntidadJuego* entidad : entidades)
-        entidad->actualizar(dt);
+    for (EntidadJuego* e : entidades) {
+        e->actualizar(dt);
+    }
 
     // 3. Colisiones
     verificarColisiones();
 
-    // 4. Entidades fuera de pantalla
-    for (EntidadJuego* e : recogerEntidadesAEliminar())
-        eliminarEntidad(e);
+    // 4. Recolectar y eliminar entidades marcadas
+    QVector<EntidadJuego*> aEliminar = recogerEntidadesAEliminar();
+    for (EntidadJuego* en : aEliminar) eliminarEntidad(en);
 
-    // 5. Meta del nivel
-    if (jugador &&
-        jugador->obtenerDistanciaRecorrida() >= distanciaObjetivo)
-    {
+    // 5. Mantener hasta maxEnemigosActivos (si hay menos y pasó intervalo)
+    int activos = contarEnemigosActivos();
+    if (activos < maxEnemigosActivos && tiempoDesdeUltimoSpawn >= intervaloSpawn) {
+        float x = 120.0f + QRandomGenerator::global()->bounded(560.0);
+        gestorSpawn->generarEnemigoEn(QVector2D(x, 80.0f));
+        tiempoDesdeUltimoSpawn = 0.0f;
+    }
+
+    // 6. Condición de victoria / derrota
+    if (jugador && jugador->obtenerDistanciaRecorrida() >= distanciaObjetivo) {
         completado = true;
         qDebug() << "Nivel 1 completado!";
     }
-
-    // 6. Muerte del jugador
-    if (jugador && jugador->obtenerVida() <= 0.0f)
-    {
+    if (jugador && jugador->obtenerVida() <= 0.0f) {
         completado = true;
         qDebug() << "Jugador eliminado. Nivel fallido.";
     }
 }
 
-bool Nivel1::nivelCompletado() const
-{
-    return completado;
-}
+bool Nivel1::nivelCompletado() const { return completado; }
 
-// ---------------------------------------------------------
-// SLOT: cuando ControlSpawn genera un enemigo
-// ---------------------------------------------------------
 void Nivel1::onEnemigoGenerado(Enemigo* nuevo)
 {
     if (!nuevo) return;
 
-    // Sin parent (manejo manual de memoria)
-    nuevo->setParent(nullptr);
+    // Nos conectamos a su señal de disparo
+    connect(nuevo, &Enemigo::disparoGenerado, this, &Nivel1::onDisparoGenerado);
 
+    // Asegurarse que nivel sea dueño de la memoria
+    nuevo->setParent(nullptr);
     entidades.append(nuevo);
 
     qDebug() << "Nivel1: enemigo spawn en"
@@ -131,64 +114,80 @@ void Nivel1::onEnemigoGenerado(Enemigo* nuevo)
              << nuevo->obtenerPosicion().y();
 }
 
-// ---------------------------------------------------------
-// Colisiones
-// ---------------------------------------------------------
+void Nivel1::onDisparoGenerado(EntidadJuego* proyectil)
+{
+    if (!proyectil) return;
+
+    // proyectil viene creado por Enemigo (Proyectil*)
+    proyectil->setParent(nullptr);
+    entidades.append(proyectil);
+}
+
 void Nivel1::verificarColisiones()
 {
     if (!jugador) return;
 
-    for (EntidadJuego* e : entidades)
+    // Iterar sobre una copia porque podemos eliminar dentro del loop
+    QVector<EntidadJuego*> lista = entidades;
+
+    for (EntidadJuego* e : lista)
     {
         if (e == jugador) continue;
 
-        if (jugador->colisionaCon(e))
-            procesarColisionJugador(e);
+        // Si proyectil impacta jugador
+        Proyectil* p = dynamic_cast<Proyectil*>(e);
+        if (p) {
+            if (p->colisionaCon(jugador)) {
+                jugador->recibirDano(p->obtenerDano());
+                eliminarEntidad(p);
+                continue;
+            }
+        }
+
+        // Enemigo colisiona con jugador (choque)
+        Enemigo* en = dynamic_cast<Enemigo*>(e);
+        if (en) {
+            if (en->colisionaCon(jugador)) {
+                jugador->recibirDano(en->obtenerDano());
+                eliminarEntidad(en);
+                continue;
+            }
+        }
+
+        // Entidad fija colisiona con jugador
+        EntidadFija* fija = dynamic_cast<EntidadFija*>(e);
+        if (fija) {
+            if (fija->colisionaCon(jugador)) {
+                jugador->recibirDano(fija->obtenerDano());
+                if (fija->obtenerEsDestructible()) eliminarEntidad(fija);
+                continue;
+            }
+        }
     }
 }
 
-void Nivel1::procesarColisionJugador(EntidadJuego* entidad)
-{
-    if (!entidad || !jugador) return;
-
-    // 1. Enemigo
-    if (auto* ene = dynamic_cast<Enemigo*>(entidad))
-    {
-        jugador->recibirDano(ene->obtenerDano());
-        eliminarEntidad(ene);
-        return;
-    }
-
-    // 2. Obstáculo fijo
-    if (auto* fija = dynamic_cast<EntidadFija*>(entidad))
-    {
-        jugador->recibirDano(fija->obtenerDano());
-
-        if (fija->obtenerEsDestructible())
-            eliminarEntidad(fija);
-
-        return;
-    }
-}
-
-// ---------------------------------------------------------
-// Eliminación de entidades
-// ---------------------------------------------------------
 QVector<EntidadJuego*> Nivel1::recogerEntidadesAEliminar()
 {
     QVector<EntidadJuego*> lista;
-    const float limiteAbajo = 850.0f;
 
-    for (EntidadJuego* e : entidades)
-    {
+    const float limiteAbajo = 900.0f;
+
+    for (EntidadJuego* e : entidades) {
+        // No eliminar al jugador
         if (e == jugador) continue;
 
-        if (auto* ene = dynamic_cast<Enemigo*>(e))
-        {
-            if (ene->obtenerPosicion().y() > limiteAbajo)
-                lista.append(e);
+        // Eliminación por señal solicitudEliminar: revisamos el tipo (si fue marcado,
+        // las entidades suelen emitir solicitudEliminar(this) y el nivel las borrará)
+        // Como no tenemos un booleano de "marcado", checaremos salida por Y (proyectiles)
+        if (auto* p = dynamic_cast<Proyectil*>(e)) {
+            if (p->obtenerPosicion().y() > limiteAbajo) lista.append(e);
+            continue;
         }
+
+        // Enemigo: si fue eliminado por choque, no aparece aquí (se eliminó antes)
+        // Entidades fijas no se eliminan por tiempo
     }
+
     return lista;
 }
 
@@ -197,9 +196,15 @@ void Nivel1::eliminarEntidad(EntidadJuego* entidad)
     if (!entidad) return;
 
     int idx = entidades.indexOf(entidad);
-    if (idx != -1)
-        entidades.removeAt(idx);
+    if (idx != -1) entidades.removeAt(idx);
 
     delete entidad;
 }
 
+int Nivel1::contarEnemigosActivos() const
+{
+    int c = 0;
+    for (EntidadJuego* e : entidades)
+        if (dynamic_cast<Enemigo*>(e)) ++c;
+    return c;
+}

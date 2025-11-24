@@ -10,7 +10,6 @@ CONFIG += c++17
 
 SOURCES += \
     controlspawn.cpp \
-    controltanque.cpp \
     enemigo.cpp \
     entidadfija.cpp \
     entidadjuego.cpp \
@@ -19,11 +18,11 @@ SOURCES += \
     mainwindow.cpp \
     nivel.cpp \
     nivel1.cpp \
+    proyectil.cpp \
     tanquejugador.cpp
 
 HEADERS += \
     controlspawn.h \
-    controltanque.h \
     enemigo.h \
     entidadfija.h \
     entidadjuego.h \
@@ -31,6 +30,7 @@ HEADERS += \
     mainwindow.h \
     nivel.h \
     nivel1.h \
+    proyectil.h \
     spawnevent.h \
     tanquejugador.h
 

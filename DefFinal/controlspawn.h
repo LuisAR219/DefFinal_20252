@@ -17,6 +17,9 @@ public:
     void actualizar(float dt);
     void agregarEvento(const SpawnEvent& evento);
 
+    // Método para que el nivel le pida generar un enemigo en X aleatoria
+    void generarEnemigoEn(const QVector2D& posicion);
+
 signals:
     void enemigoGenerado(Enemigo* nuevo);
 
@@ -25,8 +28,5 @@ private:
     float tiempoTranscurrido;     // Tiempo acumulado
     int indiceEventoActual;       // Índice del siguiente evento a generar
 };
-
 #endif // CONTROLSPAWN_H
-
-
 

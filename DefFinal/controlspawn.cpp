@@ -45,3 +45,11 @@ void ControlSpawn::actualizar(float dt)
     }
 }
 
+void ControlSpawn::generarEnemigoEn(const QVector2D& posicion)
+{
+    Enemigo* nuevo = new Enemigo(nullptr, posicion, 40.0f, 15, 18.0f);
+    emit enemigoGenerado(nuevo);
+}
+
+
+

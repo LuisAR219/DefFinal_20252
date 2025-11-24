@@ -32,13 +32,14 @@ private:
     float dt;
     qint64 ultimoTiempo;
 
+    // Entradas de movimiento
     bool wPresionado;
     bool sPresionado;
     bool aPresionado;
     bool dPresionado;
 
+    // Envia los inputs al tanque (arcade)
     void actualizarControlesJugador();
 };
 
 #endif // GAMEWIDGET_H
-

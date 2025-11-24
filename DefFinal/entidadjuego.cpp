@@ -77,4 +77,3 @@ TipoEntidad EntidadJuego::obtenerTipo() const {
 void EntidadJuego::establecerTipo(TipoEntidad t) {
     tipoEntidad = t;
 }
-

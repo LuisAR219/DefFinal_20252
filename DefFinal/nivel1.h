@@ -6,6 +6,7 @@
 #include "controlspawn.h"
 #include "entidadfija.h"
 #include "enemigo.h"
+#include "proyectil.h"
 
 #include <QVector>
 
@@ -22,22 +23,30 @@ public:
     bool nivelCompletado() const override;
 
 private slots:
-    // SLOT NECESARIO PARA EL SPAWN DE ENEMIGOS
     void onEnemigoGenerado(Enemigo* nuevo);
+    void onDisparoGenerado(EntidadJuego* proyectil);
 
 private:
     TanqueJugador* jugador;
     ControlSpawn* gestorSpawn;
     float tiempoNivel;
+
     float distanciaObjetivo;
 
-    // --- Lógica interna ---
+    // Spawn management
+    int maxEnemigosActivos;
+    float tiempoDesdeUltimoSpawn;
+    float intervaloSpawn; // tiempo mínimo entre spawns cuando se necesita mantener max
+
+    // Lógica interna
     void verificarColisiones();
     void procesarColisionJugador(EntidadJuego* entidad);
     void eliminarEntidad(EntidadJuego* entidad);
 
-    // ESTA FUNCIÓN ERA NECESARIA Y FALTABA EN EL .H
     QVector<EntidadJuego*> recogerEntidadesAEliminar();
+
+    int contarEnemigosActivos() const;
 };
 
 #endif // NIVEL1_H
+

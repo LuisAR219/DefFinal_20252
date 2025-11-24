@@ -2,8 +2,8 @@
 #define TANQUEJUGADOR_H
 
 #include "entidadjuego.h"
-#include "controltanque.h"
-#include <QPainter>
+#include <QSet>
+#include <QVector2D>
 
 class TanqueJugador : public EntidadJuego
 {
@@ -11,58 +11,33 @@ class TanqueJugador : public EntidadJuego
 
 public:
     explicit TanqueJugador(QObject* parent = nullptr,
-                           const QVector2D& posicionInicial = QVector2D(0.0f, 0.0f),
-                           float masaInicial = 1.0f,
-                           float radioColisionInicial = 16.0f);
+                           const QVector2D& posicionInicial = QVector2D(0,0));
 
-    virtual ~TanqueJugador();
+    void teclaPresionada(int key);
+    void teclaLiberada(int key);
 
-    // Interfaz EntidadJuego
+    void establecerLimites(float minX_, float maxX_, float minY_, float maxY_);
+
+    float obtenerVida() const { return vida; }
+    void recibirDano(float d) { vida -= d; if (vida < 0) vida = 0; }
+
+    float obtenerDistanciaRecorrida() const { return distanciaRecorrida; }
+
+    // Métodos obligatorios
     void actualizar(float dt) override;
-    void aplicarFuerza(const QVector2D& fuerza) override;
-    bool colisionaCon(const EntidadJuego* otra) const override;
-    void pintar(QPainter* pintor) override;
-
-    // Control del jugador (se usan dos controles: vertical y lateral)
-    ControlTanque* obtenerControlVertical() const;
-    ControlTanque* obtenerControlLateral() const;
-
-    // Vida / daño
-    void recibirDano(int dano);
-    float obtenerVida() const;
-    void establecerVida(float valor);
-
-    // Distancia recorrida
-    float obtenerDistanciaRecorrida() const;
-
-    // Límites de movimiento (carretera)
-    void establecerLimites(float izquierdo, float derecho, float superior, float inferior);
-
-    // Configuración de máximos
-    void establecerVelocidadMaxima(float maxX, float maxY);
+    void aplicarFuerza(const QVector2D& fuerza) override;   // obligatorio
+    bool colisionaCon(const EntidadJuego* otra) const override; // obligatorio
+    void pintar(QPainter* pintor) override;  // obligatorio
 
 private:
-    // Componentes de control (propiedad del tanque)
-    ControlTanque* controlVertical;
-    ControlTanque* controlLateral;
+    QSet<int> teclasActivas;
 
-    // Estadísticas del tanque
-    float vida;
+    float velocidadY;
+    float velocidadX;
     float distanciaRecorrida;
 
-    // Límites de la carretera / pantalla
-    float limiteIzquierdo;
-    float limiteDerecho;
-    float limiteSuperior;
-    float limiteInferior;
-
-    // Velocidades máximas por eje
-    float velocidadMaxX;
-    float velocidadMaxY;
-
-    // Método interno para aplicar límites y correcciones
-    void aplicarLimites();
+    float minX, maxX, minY, maxY;
+    float vida;
 };
 
 #endif // TANQUEJUGADOR_H
-

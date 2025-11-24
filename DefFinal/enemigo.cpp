@@ -43,16 +43,15 @@ void Enemigo::actualizar(float dt)
 
     posicion.setX(nuevaX);
 
-    // Mantiene su altura (no baja) — si quieres que baje, suma aquí a Y
+    // Mantiene su altura (no baja)
 
     // Manejo de disparo
     tiempoDesdeUltimoDisparo += dt;
     if (tiempoDesdeUltimoDisparo >= tiempoProximoDisparo) {
-        // Crear proyectil que dispare hacia abajo desde la posición del enemigo
         QVector2D posBala(posicion.x(), posicion.y() + radioColision + 6.0f);
         Proyectil* bala = new Proyectil(nullptr, posBala, QVector2D(0.0f, 1.0f),
-                                        260.0f, // velocidad fija (puedes usar constante)
-                                        10,     // daño por tu elección
+                                        260.0f, // velocidad fija
+                                        10,     // daño
                                         6.0f);  // radio de la bala
 
         emit disparoGenerado(bala);
@@ -60,14 +59,10 @@ void Enemigo::actualizar(float dt)
         tiempoDesdeUltimoDisparo = 0.0f;
         tiempoProximoDisparo = generarProximoDisparo();
     }
-
-    // Si enemigo sale del área por X (no esperable) o por Y, se puede eliminar.
-    // Aquí no eliminamos por Y porque son fijos en altura.
 }
 
 void Enemigo::aplicarFuerza(const QVector2D&)
 {
-    // No usado
 }
 
 bool Enemigo::colisionaCon(const EntidadJuego* otra) const
@@ -81,24 +76,18 @@ int Enemigo::obtenerDano() const
     return dano;
 }
 
-void Enemigo::pintar(QPainter* pintor)
+void Enemigo::pintar(QPainter* p)
 {
-    pintor->save();
+    static QPixmap sprite(":/imagenes/tanqueEne.png");
 
-    // Cuerpo
-    pintor->setPen(Qt::black);
-    pintor->setBrush(Qt::red);
-    float d = radioColision * 2.0f;
-painter:; // <- placeholder removed
-    pintor->drawEllipse(QRectF(posicion.x() - radioColision,
-                               posicion.y() - radioColision,
-                               d, d));
+    QRectF r(posicion.x() - 40/2,
+             posicion.y() - 40/2,
+             60,
+             60);
 
-    // Ojo/cañón
-    pintor->setBrush(Qt::darkRed);
-    pintor->drawRect(QRectF(posicion.x() - 4.0f, posicion.y() - 2.0f, 8.0f, 6.0f));
+    p->drawPixmap(r.toRect(), sprite);
 
-    pintor->restore();
 }
+
 
 

@@ -3,6 +3,7 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QDateTime>
+#include "nivel1.h"
 
 GameWidget::GameWidget(QWidget* parent)
     : QWidget(parent),
@@ -17,7 +18,6 @@ GameWidget::GameWidget(QWidget* parent)
 {
     setFocusPolicy(Qt::StrongFocus);
 
-    // Timer de refresco de la pantalla
     connect(&temporizadorPantalla, &QTimer::timeout, this, &GameWidget::onFrameUpdate);
     temporizadorPantalla.start(16);
 
@@ -26,7 +26,6 @@ GameWidget::GameWidget(QWidget* parent)
 
 GameWidget::~GameWidget()
 {
-    // nivelActual fue creado con parent=this en iniciarNivel1; igualmente lo liberamos
     if (nivelActual) {
         delete nivelActual;
         nivelActual = nullptr;
@@ -35,31 +34,25 @@ GameWidget::~GameWidget()
 
 void GameWidget::iniciarNivel1()
 {
-    // Eliminar nivel anterior (si existe)
     if (nivelActual) {
         delete nivelActual;
         nivelActual = nullptr;
     }
 
-    // Crear nuevo nivel y dejar que él inicie su temporizador interno
     nivelActual = new Nivel1(this);
     nivelActual->inicializar();
 
-    // Localizar puntero al jugador dentro de las entidades del nivel
     jugador = nullptr;
     for (EntidadJuego* e : nivelActual->getEntidades()) {
         jugador = dynamic_cast<TanqueJugador*>(e);
         if (jugador) break;
     }
 
-    if (!jugador) {
-        qWarning() << "GameWidget::iniciarNivel1 - No se encontró TanqueJugador en Nivel1()";
-    }
+    if (!jugador)
+        qWarning() << "No se encontró TanqueJugador en Nivel1()";
 
-    // Reset de flags temporales de entrada
     wPresionado = sPresionado = aPresionado = dPresionado = false;
 
-    // Reset del tiempo para dt
     ultimoTiempo = QDateTime::currentMSecsSinceEpoch();
 }
 
@@ -71,53 +64,61 @@ void GameWidget::onFrameUpdate()
     dt = (ahora - ultimoTiempo) / 1000.0f;
     ultimoTiempo = ahora;
 
-    // Capar dt para evitar saltos enormes si hubo lag
     if (dt > 0.05f) dt = 0.05f;
 
-    // Enviamos el estado de teclas al jugador (asegura sincronía)
     actualizarControlesJugador();
 
-    // El nivel tiene su propio temporizador (si hace cosas periódicas internamente).
-    // No llamamos a nivelActual->actualizar(dt) explícitamente para evitar duplicidad.
-    // Si deseas controlar el tiempo desde aquí en vez de usar temporizador interno,
-    // podría llamarse aquí.
-
-    // Repintar la pantalla
     update();
 }
 
-void GameWidget::paintEvent(QPaintEvent* /*event*/)
+void GameWidget::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
 
-    // Fondo
-    painter.fillRect(rect(), Qt::black);
+    // ---- FONDO ----
+    static QPixmap fondo(":/imagenes/fondo.png");
+    painter.drawPixmap(rect(), fondo);
 
-    if (!nivelActual) {
+    // ---- ENTIDADES ----
+    if (nivelActual)
+    {
+        for (EntidadJuego* e : nivelActual->getEntidades())
+            e->pintar(&painter);
+    }
+
+    // ---- HUD ----
+    if (jugador)
+    {
         painter.setPen(Qt::white);
-        painter.drawText(rect(), Qt::AlignCenter, "Presiona 'Iniciar Nivel 1' para comenzar");
-        return;
+        painter.setFont(QFont("Arial", 14, QFont::Bold));
+
+        // VIDA
+        painter.drawText(12, 25,
+                         "Vida: " + QString::number(jugador->obtenerVida()));
+
+        // DISTANCIA
+        float objetivo = 0.0f;
+        if (auto n1 = dynamic_cast<Nivel1*>(nivelActual))
+            objetivo = n1->obtenerDistanciaObjetivo();
+
+        painter.drawText(12, 50,
+                         "Distancia: " +
+                             QString::number(jugador->obtenerDistanciaRecorrida(), 'f', 0) +
+                             " / " + QString::number(objetivo, 'f', 0));
     }
 
-    // Pintar todas las entidades (cada entidad implementa pintar)
-    for (EntidadJuego* e : nivelActual->getEntidades()) {
-        e->pintar(&painter);
-    }
+    // ---- MENSAJES FINALES ----
+    if (auto n1 = dynamic_cast<Nivel1*>(nivelActual))
+    {
+        if (n1->nivelCompletado())
+        {
+            painter.setFont(QFont("Arial", 28, QFont::Black));
 
-    // HUD del jugador
-    if (jugador) {
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 12, QFont::Bold));
-        painter.drawText(12, 24, "Vida: " + QString::number(jugador->obtenerVida(), 'f', 0));
-        painter.drawText(12, 44, "Distancia: " + QString::number(jugador->obtenerDistanciaRecorrida(), 'f', 0));
-    }
-
-    // Mensaje de nivel completado
-    if (nivelActual->nivelCompletado()) {
-        painter.setPen(Qt::yellow);
-        painter.setFont(QFont("Arial", 28, QFont::Bold));
-        painter.drawText(rect(), Qt::AlignCenter, "NIVEL COMPLETADO");
+            if (jugador->obtenerVida() <= 0)
+                painter.drawText(width()/2 - 100, height()/2, "GAME OVER");
+            else
+                painter.drawText(width()/2 - 150, height()/2, "NIVEL COMPLETADO");
+        }
     }
 }
 
@@ -125,27 +126,17 @@ void GameWidget::actualizarControlesJugador()
 {
     if (!jugador) return;
 
-    // Enviamos los estados actuales de las teclas a TanqueJugador
-    // Usamos teclaPresionada/teclaLiberada para que TanqueJugador mantenga su propio set
-    if (wPresionado)
-        jugador->teclaPresionada(Qt::Key_W);
-    else
-        jugador->teclaLiberada(Qt::Key_W);
+    if (wPresionado) jugador->teclaPresionada(Qt::Key_W);
+    else             jugador->teclaLiberada(Qt::Key_W);
 
-    if (sPresionado)
-        jugador->teclaPresionada(Qt::Key_S);
-    else
-        jugador->teclaLiberada(Qt::Key_S);
+    if (sPresionado) jugador->teclaPresionada(Qt::Key_S);
+    else             jugador->teclaLiberada(Qt::Key_S);
 
-    if (aPresionado)
-        jugador->teclaPresionada(Qt::Key_A);
-    else
-        jugador->teclaLiberada(Qt::Key_A);
+    if (aPresionado) jugador->teclaPresionada(Qt::Key_A);
+    else             jugador->teclaLiberada(Qt::Key_A);
 
-    if (dPresionado)
-        jugador->teclaPresionada(Qt::Key_D);
-    else
-        jugador->teclaLiberada(Qt::Key_D);
+    if (dPresionado) jugador->teclaPresionada(Qt::Key_D);
+    else             jugador->teclaLiberada(Qt::Key_D);
 }
 
 void GameWidget::keyPressEvent(QKeyEvent* evento)
@@ -162,7 +153,6 @@ void GameWidget::keyPressEvent(QKeyEvent* evento)
         return;
     }
 
-    // Informar inmediatamente al jugador si ya fue encontrado
     if (jugador) jugador->teclaPresionada(evento->key());
 }
 

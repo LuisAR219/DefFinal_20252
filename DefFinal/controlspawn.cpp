@@ -25,7 +25,6 @@ void ControlSpawn::actualizar(float dt)
 
     tiempoTranscurrido += dt;
 
-    // Generar todos los eventos cuyo tiempo ya llegó
     while (indiceEventoActual < eventos.size() &&
            tiempoTranscurrido >= eventos[indiceEventoActual].tiempo)
     {

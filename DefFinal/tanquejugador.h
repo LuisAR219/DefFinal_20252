@@ -4,6 +4,7 @@
 #include "entidadjuego.h"
 #include <QSet>
 #include <QVector2D>
+#include <QPixmap>
 
 class TanqueJugador : public EntidadJuego
 {
@@ -23,11 +24,10 @@ public:
 
     float obtenerDistanciaRecorrida() const { return distanciaRecorrida; }
 
-    // Métodos obligatorios
     void actualizar(float dt) override;
-    void aplicarFuerza(const QVector2D& fuerza) override;   // obligatorio
-    bool colisionaCon(const EntidadJuego* otra) const override; // obligatorio
-    void pintar(QPainter* pintor) override;  // obligatorio
+    void aplicarFuerza(const QVector2D& fuerza) override;
+    bool colisionaCon(const EntidadJuego* otra) const override;
+    void pintar(QPainter* pintor) override;
 
 private:
     QSet<int> teclasActivas;
@@ -38,6 +38,10 @@ private:
 
     float minX, maxX, minY, maxY;
     float vida;
+
+    QPixmap sprite;
+    int anchoSprite;
+    int altoSprite;
 };
 
 #endif // TANQUEJUGADOR_H

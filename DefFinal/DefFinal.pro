@@ -18,6 +18,7 @@ SOURCES += \
     mainwindow.cpp \
     nivel.cpp \
     nivel1.cpp \
+    obstaculo.cpp \
     proyectil.cpp \
     tanquejugador.cpp
 
@@ -30,6 +31,7 @@ HEADERS += \
     mainwindow.h \
     nivel.h \
     nivel1.h \
+    obstaculo.h \
     proyectil.h \
     spawnevent.h \
     tanquejugador.h
@@ -41,3 +43,6 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    resources.qrc

@@ -7,6 +7,7 @@
 #include "entidadfija.h"
 #include "enemigo.h"
 #include "proyectil.h"
+#include "obstaculo.h"
 
 #include <QVector>
 
@@ -21,6 +22,7 @@ public:
     void inicializar() override;
     void actualizar(float dt) override;
     bool nivelCompletado() const override;
+    float obtenerDistanciaObjetivo() const { return distanciaObjetivo; }
 
 private slots:
     void onEnemigoGenerado(Enemigo* nuevo);
@@ -33,12 +35,13 @@ private:
 
     float distanciaObjetivo;
 
-    // Spawn management
     int maxEnemigosActivos;
     float tiempoDesdeUltimoSpawn;
-    float intervaloSpawn; // tiempo mínimo entre spawns cuando se necesita mantener max
+    float intervaloSpawn;
 
-    // Lógica interna
+    float tiempoDesdeUltimoObstaculo;
+    float intervaloObstaculos;
+
     void verificarColisiones();
     void procesarColisionJugador(EntidadJuego* entidad);
     void eliminarEntidad(EntidadJuego* entidad);
@@ -49,4 +52,3 @@ private:
 };
 
 #endif // NIVEL1_H
-

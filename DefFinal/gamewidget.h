@@ -38,7 +38,7 @@ private:
     bool aPresionado;
     bool dPresionado;
 
-    // Envia los inputs al tanque (arcade)
+    // Envia los inputs al tanque
     void actualizarControlesJugador();
 };
 

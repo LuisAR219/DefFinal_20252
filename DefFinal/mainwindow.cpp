@@ -8,10 +8,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Crear el widget del juego
     juego = new GameWidget(this);
 
-    // Insertarlo en el contenedor definido en el .ui
     ui->gameContainer->layout()->addWidget(juego);
 }
 

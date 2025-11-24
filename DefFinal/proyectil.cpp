@@ -12,7 +12,6 @@ Proyectil::Proyectil(QObject* parent,
     velocidad(velocidad_),
     danoImpacto(dano)
 {
-    // Normalizar dirección (si es cero, indicar hacia abajo)
     if (qFuzzyIsNull(dirNormalizada.length())) {
         dirNormalizada = QVector2D(0.0f, 1.0f);
     } else {
@@ -25,7 +24,6 @@ void Proyectil::actualizar(float dt)
     // Movimiento rectilíneo a velocidad constante
     posicion += dirNormalizada * velocidad * dt;
 
-    // Si sale de pantalla (umbral), solicitar eliminación
     const float limiteAbajo = 900.0f;
     const float limiteArriba = -100.0f;
     if (posicion.y() > limiteAbajo || posicion.y() < limiteArriba) {
@@ -35,7 +33,6 @@ void Proyectil::actualizar(float dt)
 
 void Proyectil::aplicarFuerza(const QVector2D& )
 {
-    // No usado para proyectiles simples
 }
 
 bool Proyectil::colisionaCon(const EntidadJuego* otra) const
@@ -46,12 +43,14 @@ bool Proyectil::colisionaCon(const EntidadJuego* otra) const
 
 void Proyectil::pintar(QPainter* pintor)
 {
-    pintor->save();
-    pintor->setPen(Qt::NoPen);
-    pintor->setBrush(Qt::yellow);
-    float d = radioColision * 2.0f;
-    pintor->drawEllipse(QRectF(posicion.x() - radioColision,
-                               posicion.y() - radioColision,
-                               d, d));
-    pintor->restore();
+    static QPixmap bala(":/imagenes/bala.png");
+
+    QRectF r(posicion.x() - 8,
+             posicion.y() - 8,
+             16,
+             16);
+
+    pintor->drawPixmap(r.toRect(), bala);
+
 }
+

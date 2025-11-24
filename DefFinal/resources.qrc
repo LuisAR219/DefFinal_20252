@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>imagenes/tanque.png</file>
+        <file>imagenes/tanqueEne.png</file>
+        <file>imagenes/rueda.png</file>
+        <file>imagenes/barril.png</file>
+        <file>imagenes/mina.png</file>
+        <file>imagenes/bala.png</file>
+        <file>imagenes/fondo.png</file>
+    </qresource>
+</RCC>
+

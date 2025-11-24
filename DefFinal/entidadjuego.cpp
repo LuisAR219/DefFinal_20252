@@ -23,12 +23,7 @@ EntidadJuego::EntidadJuego(QObject* parent,
 
 EntidadJuego::~EntidadJuego()
 {
-    // Destructor virtual para permitir eliminación segura a través de punteros base
 }
-
-// ----------------------
-// Getters / Setters
-// ----------------------
 
 QVector2D EntidadJuego::obtenerPosicion() const {
     return posicion;

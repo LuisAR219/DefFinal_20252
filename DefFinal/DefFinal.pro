@@ -14,14 +14,16 @@ SOURCES += \
     entidadmovil.cpp \
     main.cpp \
     mainwindow.cpp \
-    nivellondres.cpp
+    nivellondres.cpp \
+    proyectil.cpp
 
 HEADERS += \
     Nivel.h \
     entidadjuego.h \
     entidadmovil.h \
     mainwindow.h \
-    nivellondres.h
+    nivellondres.h \
+    proyectil.h
 
 FORMS += \
     mainwindow.ui

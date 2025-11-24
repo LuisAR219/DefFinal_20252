@@ -15,7 +15,8 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     nivellondres.cpp \
-    proyectil.cpp
+    proyectil.cpp \
+    tanque.cpp
 
 HEADERS += \
     Nivel.h \
@@ -23,7 +24,8 @@ HEADERS += \
     entidadmovil.h \
     mainwindow.h \
     nivellondres.h \
-    proyectil.h
+    proyectil.h \
+    tanque.h
 
 FORMS += \
     mainwindow.ui

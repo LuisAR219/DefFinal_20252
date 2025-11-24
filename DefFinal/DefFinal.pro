@@ -10,22 +10,24 @@ CONFIG += c++17
 
 SOURCES += \
     Nivel.cpp \
+    avionenemigo.cpp \
     entidadjuego.cpp \
     entidadmovil.cpp \
     main.cpp \
     mainwindow.cpp \
+    motoraprendizaje.cpp \
     nivellondres.cpp \
-    proyectil.cpp \
-    tanque.cpp
+    proyectil.cpp
 
 HEADERS += \
     Nivel.h \
+    avionenemigo.h \
     entidadjuego.h \
     entidadmovil.h \
     mainwindow.h \
+    motoraprendizaje.h \
     nivellondres.h \
-    proyectil.h \
-    tanque.h
+    proyectil.h
 
 FORMS += \
     mainwindow.ui

@@ -1,0 +1,14 @@
+<RCC>
+  <qresource prefix="/sprites">
+    <file>imagenes/Avión.png</file>
+    <file>imagenes/Bala.png</file>
+    <file>imagenes/Parado1.png</file>
+    <file>imagenes/Corriendo1.png</file>
+    <file>imagenes/Corriendo2.png</file>
+    <file>imagenes/Corriendo3.png</file>
+    <file>imagenes/Corriendo4.png</file>
+    <file>imagenes/Corriendo5.png</file>
+    <file>imagenes/Corriendo6.png</file>
+    <file>imagenes/Fuego.png</file>
+  </qresource>
+</RCC>

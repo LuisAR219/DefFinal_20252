@@ -16,6 +16,10 @@ void NivelLondres::inicializar() {
     bombarderoEnemigo->inicializarMotorAprendizaje();
 }
 
+Soldado* NivelLondres::getJugador() const {
+    return soldadoJugador;
+}
+
 void NivelLondres::actualizar(float dt) {
     for (EntidadJuego* entidad : entidades) {
         entidad->actualizar(dt);

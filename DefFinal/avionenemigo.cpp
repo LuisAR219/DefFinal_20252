@@ -9,6 +9,10 @@ void AvionEnemigo::actualizar(float dt) {
     tiempoDesdeUltimoDisparo += dt;
 }
 
+bool AvionEnemigo::verificaImpacto(const EntidadJuego* jugador) const {
+    return (posicion - jugador->getPosicion()).length() < 50.0f;
+}
+
 bool AvionEnemigo::colisionaCon(const EntidadJuego* otra) const {
     return (posicion - otra->getPosicion()).length() < 40.0f;
 }

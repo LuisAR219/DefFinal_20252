@@ -19,10 +19,14 @@ public:
     void adaptarEstrategia(const QQueue<QVector2D>& historialJugador);
     Proyectil* soltarBomba();
 
+    bool getDireccionDerecha() const { return bombarderoDerecha; }
+    void setDireccionDerecha(bool dir) { bombarderoDerecha = dir; }
+
 private:
     float frecuenciaLanzamiento;
     float tiempoDesdeUltimoDisparo;
     MotorAprendizaje* motorIA;
+    bool bombarderoDerecha;
 };
 
 #endif // AVIONENEMIGO_H

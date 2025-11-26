@@ -1,15 +1,17 @@
 #include "Proyectil.h"
 
 Proyectil::Proyectil(QObject* parent)
-    : EntidadMovil(parent), daño(50.0f)
+    : EntidadMovil(parent), daño(25.0f)
 {}
 
 void Proyectil::actualizar(float dt) {
     aplicarFisica(dt);
+
+
 }
 
 bool Proyectil::colisionaCon(const EntidadJuego* otra) const {
-    return (posicion - otra->getPosicion()).length() < 10.0f;
+    return (posicion - otra->getPosicion()).length() < 30.0f;
 }
 
 void Proyectil::lanzar(const QVector2D& direccion, float potencia) {

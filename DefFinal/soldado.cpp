@@ -9,6 +9,7 @@ Soldado::Soldado(QObject* parent)
 {
     setTipoEntidad(JUGADOR);
     setVida(100.0f);
+    setPosicion(QVector2D(400, 450));
 }
 
 void Soldado::aplicarFuerza(const QVector2D& fuerza) {
@@ -25,11 +26,14 @@ void Soldado::actualizar(float dt) {
 
     posicion += velocidad * dt;
 
+    posicion.setX(qBound(50.0f, posicion.x(), 750.0f));
+    posicion.setY(qBound(400.0f, posicion.y(), 550.0f));
+
     registrarPosicion();
 }
 
 bool Soldado::colisionaCon(const EntidadJuego* otra) const {
-    return (posicion - otra->getPosicion()).length() < 20.0f;
+    return (posicion - otra->getPosicion()).length() < 30.0f;
 }
 
 void Soldado::recibirInput(const QVector2D& direccion) {
@@ -44,8 +48,8 @@ void Soldado::reaccionarAExplosión() {
     if (invulnerableTimer > 0.0f) return;
 
     invulnerableTimer = invulnerableDuration;
-
     setVida(qMax(0.0f, getVida() - 25.0f));
+
     velocidad += QVector2D(-direccionActual.x(), -direccionActual.y()) * 80.0f;
 }
 

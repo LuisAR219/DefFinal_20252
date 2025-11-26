@@ -16,9 +16,7 @@ public:
     void aplicarFuerza(const QVector2D& fuerza) override;
 
     void recibirInput(const QVector2D& direccion);
-
     void reaccionarAExplosión();
-
     const QQueue<QVector2D>& getHistorialMovimiento() const;
 
 private:

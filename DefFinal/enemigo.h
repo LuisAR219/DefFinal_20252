@@ -25,11 +25,9 @@ public:
     int obtenerDano() const;
 
 signals:
-    // Señal para notificar que el enemigo generó un proyectil
     void disparoGenerado(EntidadJuego* proyectil);
 
 private:
-    // Patrulla horizontal
     float velocidadPatrulla;
     int dano;
 
@@ -44,6 +42,3 @@ private:
     float generarProximoDisparo(); // devuelve valor aleatorio entre 1.0 y 2.5
 };
 #endif // ENEMIGO_H
-
-
-

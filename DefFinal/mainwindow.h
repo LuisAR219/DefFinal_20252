@@ -20,6 +20,7 @@ public:
 
 private slots:
     void on_btnIniciarNivel1_clicked();
+    void on_btnIniciarNivel2_clicked();
 
 private:
     Ui::MainWindow *ui;

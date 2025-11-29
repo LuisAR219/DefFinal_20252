@@ -145,7 +145,6 @@ void Nivel1::verificarColisiones()
 {
     if (!jugador) return;
 
-    // Hacemos copia porque podemos eliminar durante la iteración
     QVector<EntidadJuego*> lista = entidades;
 
     for (EntidadJuego* e : lista)
@@ -231,4 +230,3 @@ int Nivel1::contarEnemigosActivos() const
         if (dynamic_cast<Enemigo*>(e)) ++c;
     return c;
 }
-

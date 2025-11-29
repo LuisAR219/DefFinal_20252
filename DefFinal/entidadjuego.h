@@ -26,7 +26,6 @@ public:
     // Destructor para herencia
     virtual ~EntidadJuego();
 
-    // Métodos virtuales puros: toda entidad del juego debe implementar estos
     virtual void actualizar(float dt) = 0;
     virtual void aplicarFuerza(const QVector2D& fuerza) = 0;
     virtual bool colisionaCon(const EntidadJuego* otra) const = 0;
@@ -49,7 +48,6 @@ public:
     void establecerTipo(TipoEntidad t);
 
 signals:
-    // Señal necesaria para que entidades como Enemigo pidan ser eliminadas
     void solicitudEliminar(EntidadJuego* quien);
 
 protected:

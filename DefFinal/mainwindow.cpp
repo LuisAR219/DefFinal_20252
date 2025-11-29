@@ -9,7 +9,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     juego = new GameWidget(this);
-
     ui->gameContainer->layout()->addWidget(juego);
 }
 
@@ -24,5 +23,8 @@ void MainWindow::on_btnIniciarNivel1_clicked()
         juego->iniciarNivel1();
 }
 
-
-
+void MainWindow::on_btnIniciarNivel2_clicked()
+{
+    if (juego)
+        juego->iniciarNivel2();
+}

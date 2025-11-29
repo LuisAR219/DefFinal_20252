@@ -3,22 +3,28 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QDateTime>
-#include "nivel1.h"
 
 GameWidget::GameWidget(QWidget* parent)
     : QWidget(parent),
     nivelActual(nullptr),
     jugador(nullptr),
+    nivelActualN2(nullptr),
+    canonJugador(nullptr),
     wPresionado(false),
     sPresionado(false),
     aPresionado(false),
     dPresionado(false),
+    teclaA_N2(false),
+    teclaD_N2(false),
+    teclaEspacio_N2(false),
     dt(0.016f),
     ultimoTiempo(0)
 {
     setFocusPolicy(Qt::StrongFocus);
 
-    connect(&temporizadorPantalla, &QTimer::timeout, this, &GameWidget::onFrameUpdate);
+    connect(&temporizadorPantalla, &QTimer::timeout,
+            this, &GameWidget::onFrameUpdate);
+
     temporizadorPantalla.start(16);
 
     ultimoTiempo = QDateTime::currentMSecsSinceEpoch();
@@ -26,149 +32,222 @@ GameWidget::GameWidget(QWidget* parent)
 
 GameWidget::~GameWidget()
 {
-    if (nivelActual) {
+    if (nivelActual)
         delete nivelActual;
-        nivelActual = nullptr;
-    }
+
+    if (nivelActualN2)
+        delete nivelActualN2;
 }
 
+//
+// ===============================
+//       INICIAR NIVEL 1
+// ===============================
+//
 void GameWidget::iniciarNivel1()
 {
-    if (nivelActual) {
+    if (nivelActual)
         delete nivelActual;
-        nivelActual = nullptr;
-    }
+
+    if (nivelActualN2)
+        delete nivelActualN2;
+
+    nivelActualN2 = nullptr;
+    canonJugador = nullptr;
 
     nivelActual = new Nivel1(this);
     nivelActual->inicializar();
 
     jugador = nullptr;
-    for (EntidadJuego* e : nivelActual->getEntidades()) {
+    for (EntidadJuego* e : nivelActual->getEntidades())
+    {
         jugador = dynamic_cast<TanqueJugador*>(e);
         if (jugador) break;
     }
 
     if (!jugador)
-        qWarning() << "No se encontró TanqueJugador en Nivel1()";
+        qWarning() << "No se encontró TanqueJugador en Nivel1";
 
     wPresionado = sPresionado = aPresionado = dPresionado = false;
-
     ultimoTiempo = QDateTime::currentMSecsSinceEpoch();
 }
 
+//
+// ===============================
+//       INICIAR NIVEL 2
+// ===============================
+//
+void GameWidget::iniciarNivel2()
+{
+    if (nivelActual)
+        delete nivelActual;
+
+    if (nivelActualN2)
+        delete nivelActualN2;
+
+    nivelActual = nullptr;
+    jugador = nullptr;
+
+    nivelActualN2 = new Nivel2(this);
+    nivelActualN2->inicializar();
+
+    canonJugador = nivelActualN2->obtenerCanon();
+    if (!canonJugador)
+        qWarning() << "No se encontró Canon del jugador en Nivel2";
+
+    teclaA_N2 = teclaD_N2 = teclaEspacio_N2 = false;
+}
+
+//
+// ===============================
+//       ACTUALIZACIÓN FRAME
+// ===============================
+//
 void GameWidget::onFrameUpdate()
 {
-    if (!nivelActual) return;
-
     qint64 ahora = QDateTime::currentMSecsSinceEpoch();
     dt = (ahora - ultimoTiempo) / 1000.0f;
     ultimoTiempo = ahora;
-
     if (dt > 0.05f) dt = 0.05f;
 
-    actualizarControlesJugador();
+    if (nivelActual)          // Nivel 1
+        actualizarControlesJugador();
+
+    if (nivelActualN2)        // Nivel 2
+    {
+        actualizarControlesNivel2();
+        nivelActualN2->actualizar(dt);
+    }
 
     update();
 }
 
+//
+// ===============================
+//           DIBUJADO
+// ===============================
+//
 void GameWidget::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
 
-    // ---- FONDO ----
-    static QPixmap fondo(":/imagenes/fondo.png");
-    painter.drawPixmap(rect(), fondo);
+    // Fondo
+    painter.fillRect(rect(), QColor(10, 30, 60));
 
-    // ---- ENTIDADES ----
+    // ---- NIVEL 1 ----
     if (nivelActual)
     {
         for (EntidadJuego* e : nivelActual->getEntidades())
             e->pintar(&painter);
     }
 
-    // ---- HUD ----
-    if (jugador)
-    {
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 14, QFont::Bold));
-
-        // VIDA
-        painter.drawText(12, 25,
-                         "Vida: " + QString::number(jugador->obtenerVida()));
-
-        // DISTANCIA
-        float objetivo = 0.0f;
-        if (auto n1 = dynamic_cast<Nivel1*>(nivelActual))
-            objetivo = n1->obtenerDistanciaObjetivo();
-
-        painter.drawText(12, 50,
-                         "Distancia: " +
-                             QString::number(jugador->obtenerDistanciaRecorrida(), 'f', 0) +
-                             " / " + QString::number(objetivo, 'f', 0));
-    }
-
-    // ---- MENSAJES FINALES ----
-    if (auto n1 = dynamic_cast<Nivel1*>(nivelActual))
-    {
-        if (n1->nivelCompletado())
-        {
-            painter.setFont(QFont("Arial", 28, QFont::Black));
-
-            if (jugador->obtenerVida() <= 0)
-                painter.drawText(width()/2 - 100, height()/2, "GAME OVER");
-            else
-                painter.drawText(width()/2 - 150, height()/2, "NIVEL COMPLETADO");
-        }
-    }
+    // ---- NIVEL 2 ----
+    if (nivelActualN2)
+        nivelActualN2->pintar(&painter);
 }
 
+//
+// ===============================
+//   CONTROLES: NIVEL 1
+// ===============================
+//
 void GameWidget::actualizarControlesJugador()
 {
     if (!jugador) return;
 
     if (wPresionado) jugador->teclaPresionada(Qt::Key_W);
-    else             jugador->teclaLiberada(Qt::Key_W);
+    else jugador->teclaLiberada(Qt::Key_W);
 
     if (sPresionado) jugador->teclaPresionada(Qt::Key_S);
-    else             jugador->teclaLiberada(Qt::Key_S);
+    else jugador->teclaLiberada(Qt::Key_S);
 
     if (aPresionado) jugador->teclaPresionada(Qt::Key_A);
-    else             jugador->teclaLiberada(Qt::Key_A);
+    else jugador->teclaLiberada(Qt::Key_A);
 
     if (dPresionado) jugador->teclaPresionada(Qt::Key_D);
-    else             jugador->teclaLiberada(Qt::Key_D);
+    else jugador->teclaLiberada(Qt::Key_D);
 }
 
+//
+// ===============================
+//   CONTROLES: NIVEL 2
+// ===============================
+//
+void GameWidget::actualizarControlesNivel2()
+{
+    if (!canonJugador) return;
+
+    if (teclaA_N2)
+        canonJugador->procesarTecla(Qt::Key_A, true);
+    else
+        canonJugador->procesarTecla(Qt::Key_A, false);
+
+    if (teclaD_N2)
+        canonJugador->procesarTecla(Qt::Key_D, true);
+    else
+        canonJugador->procesarTecla(Qt::Key_D, false);
+
+    if (teclaEspacio_N2)
+        canonJugador->procesarTecla(Qt::Key_Space, true);
+    else
+        canonJugador->procesarTecla(Qt::Key_Space, false);
+}
+
+//
+// ===============================
+//       ENTRADA DE TECLAS
+// ===============================
+//
 void GameWidget::keyPressEvent(QKeyEvent* evento)
 {
-    if (evento->isAutoRepeat()) return;
-
-    switch (evento->key()) {
-    case Qt::Key_W: wPresionado = true; break;
-    case Qt::Key_S: sPresionado = true; break;
-    case Qt::Key_A: aPresionado = true; break;
-    case Qt::Key_D: dPresionado = true; break;
-    default:
-        QWidget::keyPressEvent(evento);
+    if (evento->isAutoRepeat())
         return;
+
+    // ----- NIVEL 1 -----
+    if (nivelActual)
+    {
+        switch (evento->key()) {
+        case Qt::Key_W: wPresionado = true; break;
+        case Qt::Key_S: sPresionado = true; break;
+        case Qt::Key_A: aPresionado = true; break;
+        case Qt::Key_D: dPresionado = true; break;
+        }
     }
 
-    if (jugador) jugador->teclaPresionada(evento->key());
+    // ----- NIVEL 2 -----
+    if (nivelActualN2)
+    {
+        switch (evento->key()) {
+        case Qt::Key_A: teclaA_N2 = true; break;
+        case Qt::Key_D: teclaD_N2 = true; break;
+        case Qt::Key_Space: teclaEspacio_N2 = true; break;
+        }
+    }
 }
 
 void GameWidget::keyReleaseEvent(QKeyEvent* evento)
 {
-    if (evento->isAutoRepeat()) return;
-
-    switch (evento->key()) {
-    case Qt::Key_W: wPresionado = false; break;
-    case Qt::Key_S: sPresionado = false; break;
-    case Qt::Key_A: aPresionado = false; break;
-    case Qt::Key_D: dPresionado = false; break;
-    default:
-        QWidget::keyReleaseEvent(evento);
+    if (evento->isAutoRepeat())
         return;
+
+    // ----- NIVEL 1 -----
+    if (nivelActual)
+    {
+        switch (evento->key()) {
+        case Qt::Key_W: wPresionado = false; break;
+        case Qt::Key_S: sPresionado = false; break;
+        case Qt::Key_A: aPresionado = false; break;
+        case Qt::Key_D: dPresionado = false; break;
+        }
     }
 
-    if (jugador) jugador->teclaLiberada(evento->key());
+    // ----- NIVEL 2 -----
+    if (nivelActualN2)
+    {
+        switch (evento->key()) {
+        case Qt::Key_A: teclaA_N2 = false; break;
+        case Qt::Key_D: teclaD_N2 = false; break;
+        case Qt::Key_Space: teclaEspacio_N2 = false; break;
+        }
+    }
 }

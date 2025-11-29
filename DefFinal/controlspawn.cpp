@@ -31,7 +31,7 @@ void ControlSpawn::actualizar(float dt)
         const SpawnEvent& ev = eventos[indiceEventoActual];
 
         Enemigo* nuevo = new Enemigo(
-            nullptr,        // sin parent -> dueño será Nivel1
+            nullptr,
             ev.posicion,
             ev.velocidad,
             ev.dano,
@@ -49,6 +49,3 @@ void ControlSpawn::generarEnemigoEn(const QVector2D& posicion)
     Enemigo* nuevo = new Enemigo(nullptr, posicion, 40.0f, 15, 18.0f);
     emit enemigoGenerado(nuevo);
 }
-
-
-

@@ -9,8 +9,8 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    barcoenemigo.cpp \
-    canonjugador.cpp \
+    barco.cpp \
+    canon.cpp \
     controlspawn.cpp \
     enemigo.cpp \
     entidadfija.cpp \
@@ -23,13 +23,12 @@ SOURCES += \
     nivel2.cpp \
     obstaculo.cpp \
     proyectil.cpp \
-    proyectilcanon.cpp \
+    proyectilBalistico.cpp \
     tanquejugador.cpp
 
 HEADERS += \
-    barcoenemigo.h \
-    barra_potencia.h \
-    canonjugador.h \
+    barco.h \
+    canon.h \
     controlspawn.h \
     enemigo.h \
     entidadfija.h \
@@ -41,7 +40,7 @@ HEADERS += \
     nivel2.h \
     obstaculo.h \
     proyectil.h \
-    proyectilcanon.h \
+    proyectilBalistico.h \
     spawnevent.h \
     tanquejugador.h
 

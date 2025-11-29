@@ -28,4 +28,3 @@ private:
     int indiceEventoActual;       // Índice del siguiente evento a generar
 };
 #endif // CONTROLSPAWN_H
-

@@ -2,12 +2,12 @@
 #define NIVEL2_H
 
 #include "nivel.h"
-#include "canonjugador.h"
-#include "proyectilcanon.h"
-#include "barcoenemigo.h"
-#include "barras_potencia.h"
-
+#include "canon.h"
+#include "barco.h"
+#include "proyectilbalistico.h"
 #include <QVector>
+#include <QPainter>
+#include <QRandomGenerator>
 
 class Nivel2 : public Nivel
 {
@@ -15,43 +15,39 @@ class Nivel2 : public Nivel
 
 public:
     explicit Nivel2(QObject* parent = nullptr);
-    ~Nivel2();
+    ~Nivel2() override;
 
     void inicializar() override;
     void actualizar(float dt) override;
     bool nivelCompletado() const override;
+    void pintar(QPainter* painter);
 
-    QVector<EntidadJuego*>& getEntidades() override { return entidades; }
+    void procesarTeclaPress();
+    void procesarTeclaRelease();
+    Canon* obtenerCanon();
+
+private slots:
 
 private:
-    enum EstadoDisparo {
-        Fase_MovVertical,
-        Fase_FijarAltura,
-        Fase_OscilarAngulo,
-        Fase_FijarAngulo,
-        Fase_OscilarPotencia,
-        Fase_FijarPotencia,
-        Fase_ProyectilEnVuelo
-    };
+    Canon canon;
+    QVector<EntidadJuego*> entidadesNivel;
 
-    EstadoDisparo estadoActual;
+    int totalBarcosPorDerrotar;
+    int barcosDerrotados;
+    int barcosGenerados;
+    int maxSimultaneos;
 
-    CanonJugador* canon;
-    BarraPotencia* barraPotencia;
-    ProyectilCanon* proyectilActual;
+    float tiempoDesdeUltimoSpawn;
+    float intervaloSpawnMin;
+    float intervaloSpawnMax;
+    float tiempoProximoSpawn;
 
-    QVector<EntidadJuego*> entidades;
-
-    QVector<BarcoEnemigo*> barcosActivos;
-    int totalBarcosPorDestruir;
-    int barcosRestantes;
-
-    float tiempo;
-
-    void gestionarFases(float dt);
-    void gestionarBarcos(float dt);
+    // Auxiliares
+    void generarSiguienteBarco();
+    int contarBarcosActivos() const;
     void verificarColisiones();
+    QVector<EntidadJuego*> recogerEntidadesAEliminar();
+    void eliminarEntidad(EntidadJuego* entidad);
 };
 
-#endif
-
+#endif // NIVEL2_H

@@ -28,10 +28,8 @@ float Enemigo::generarProximoDisparo()
 
 void Enemigo::actualizar(float dt)
 {
-    // Patrulla horizontal simple
     float nuevaX = posicion.x() + direccion * velocidadPatrulla * dt;
 
-    // Si excede el rango, invertir dirección
     if (nuevaX > origenX + rangoPatrulla) {
         nuevaX = origenX + rangoPatrulla;
         direccion = -1;
@@ -43,9 +41,6 @@ void Enemigo::actualizar(float dt)
 
     posicion.setX(nuevaX);
 
-    // Mantiene su altura (no baja)
-
-    // Manejo de disparo
     tiempoDesdeUltimoDisparo += dt;
     if (tiempoDesdeUltimoDisparo >= tiempoProximoDisparo) {
         QVector2D posBala(posicion.x(), posicion.y() + radioColision + 6.0f);
@@ -88,6 +83,3 @@ void Enemigo::pintar(QPainter* p)
     p->drawPixmap(r.toRect(), sprite);
 
 }
-
-
-

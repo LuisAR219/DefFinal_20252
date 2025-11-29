@@ -25,6 +25,13 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QPushButton" name="btnIniciarNivel2">
+         <property name="text">
+          <string>Iniciar Nivel 2</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>

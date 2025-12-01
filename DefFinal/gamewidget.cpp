@@ -2,6 +2,10 @@
 #include <QGraphicsPixmapItem>
 #include <QDebug>
 #include <QMessageBox>
+#include <QUrl>
+#include <QResizeEvent>
+#include <QVBoxLayout>
+#include <QFile>
 
 GameWidget::GameWidget(QWidget* parent)
     : QWidget(parent),
@@ -21,7 +25,9 @@ GameWidget::GameWidget(QWidget* parent)
     explosionesHUD(nullptr),
     estadoHUD(nullptr),
     vidaBarra(nullptr),
-    botonReiniciar(nullptr)
+    botonReiniciar(nullptr),
+    musicaFondo(nullptr),
+    audioOutput(nullptr)
 {
     qDebug() << "=== INICIANDO GameWidget ===";
 
@@ -39,33 +45,62 @@ GameWidget::GameWidget(QWidget* parent)
         return;
     }
 
-    view->setScene(scene);
-    view->setFixedSize(800, 600);
-    scene->setSceneRect(0, 0, 800, 600);
+    /* ---------- CONFIGURACIÓN DEL VIEW ---------- */
+    view->setRenderHint(QPainter::Antialiasing);
+    view->setCacheMode(QGraphicsView::CacheBackground);
+    view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    view->setDragMode(QGraphicsView::NoDrag);
+    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    view->setStyleSheet("background-color: black;");   // bordes negros
 
+    scene->setSceneRect(0, 0, 800, 600);              // mundo lógico 800×600
+
+    /* ---------- LAYOUT PARA EXPANSIÓN ---------- */
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->addWidget(view);
+    layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(layout);
+
+    /* ---------- CARGAR RECURSOS ---------- */
     cargarSprites();
     crearHUD();
 
+    /* ---------- BOTÓN REINICIAR ---------- */
     botonReiniciar = new QPushButton("Reiniciar", this);
     botonReiniciar->setGeometry(650, 20, 100, 30);
     botonReiniciar->hide();
-
     connect(botonReiniciar, &QPushButton::clicked, this, &GameWidget::reiniciarNivel);
-    connect(&updateTimer, &QTimer::timeout, this, &GameWidget::onUpdate);
-    connect(&nivelTimer, &QTimer::timeout, this, &GameWidget::actualizarTiempo);
 
+    /* ---------- TIMERS ---------- */
+    connect(&updateTimer, &QTimer::timeout, this, &GameWidget::onUpdate);
+    connect(&nivelTimer,  &QTimer::timeout, this, &GameWidget::actualizarTiempo);
     updateTimer.start(16);
     nivelTimer.start(1000);
 
+    /* ---------- SEÑALES ---------- */
     connect(nivel, &NivelLondres::nivelFallido, this, &GameWidget::mostrarDerrota);
 
-    setFocusPolicy(Qt::StrongFocus);
+    /* ---------- AUDIO ---------- */
+    audioOutput = new QAudioOutput(this);
+    musicaFondo = new QMediaPlayer(this);
+    musicaFondo->setAudioOutput(audioOutput);
+    musicaFondo->setSource(QUrl("qrc:/audio/musicaFondo.wav"));
+    audioOutput->setVolume(0.5f);
+    musicaFondo->setLoops(QMediaPlayer::Infinite);
+    musicaFondo->play();
 
+    QFile wavFile(":/audio/musicaFondo.wav");
+    if (!wavFile.exists()) {
+        qDebug() << "❌ WAV NO encontrado en recursos";
+    } else {
+        qDebug() << "✅ WAV encontrado, tamaño" << wavFile.size() << "bytes";
+    }
+
+    /* ---------- CACHE SPRITES ---------- */
     nivel->setSpriteCache(spriteCache);
 
     qDebug() << "GameWidget inicializado correctamente.";
-    qDebug() << "Jugador vida:" << soldadoJugador->getVida();
-    qDebug() << "Nivel entidades:" << nivel->getEntidades().size();
 }
 
 GameWidget::~GameWidget() {
@@ -76,6 +111,11 @@ GameWidget::~GameWidget() {
             delete item;
         }
     }
+    if (musicaFondo) {
+        musicaFondo->stop();
+        musicaFondo->deleteLater();
+    }
+    if (audioOutput) audioOutput->deleteLater();
 }
 
 void GameWidget::crearHUD() {
@@ -198,6 +238,13 @@ void GameWidget::keyReleaseEvent(QKeyEvent* event) {
     if (soldadoJugador) soldadoJugador->recibirInput(direccionInput);
 }
 
+void GameWidget::resizeEvent(QResizeEvent *event) {
+    QWidget::resizeEvent(event);
+    if (view && scene) {
+        view->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
+    }
+}
+
 void GameWidget::onUpdate() {
     if (!scene || !nivel || !soldadoJugador) return;
 
@@ -250,14 +297,21 @@ void GameWidget::onUpdate() {
             }
 
             if (spriteKey == "bombardero") {
-                item->setPos(entidad->getPosicion().x(), 0);
+                item->setPos(entidad->getPosicion().x(), -180);
+                item->setZValue(-5);
             } else {
                 item->setPos(entidad->getPosicion().x(), entidad->getPosicion().y());
+                item->setZValue(5);
             }
 
             item->setZValue(5);
             scene->addItem(item);
         }
+    }
+
+    for (QGraphicsItem* msg : scene->items()) {
+        if (auto txt = qgraphicsitem_cast<QGraphicsSimpleTextItem*>(msg))
+            txt->setZValue(100);
     }
 
     actualizarHUD();
@@ -284,12 +338,15 @@ void GameWidget::actualizarHUD() {
 }
 
 void GameWidget::actualizarTiempo() {
-    if (tiempoRestante > 0) {
-        tiempoRestante--;
-        actualizarHUD();
-    } else {
+    if (tiempoRestante <= 0) {
         mostrarVictoria();
+        updateTimer.stop();
+        nivelTimer.stop();
+        return;
     }
+
+    tiempoRestante--;
+    actualizarHUD();
 }
 
 void GameWidget::mostrarDerrota() {
@@ -300,11 +357,14 @@ void GameWidget::mostrarDerrota() {
     texto->setBrush(Qt::red);
     texto->setFont(QFont("Arial", 24));
     texto->setPos(250, 250);
+    texto->setZValue(100);
     scene->addItem(texto);
 
     if (botonReiniciar) botonReiniciar->show();
     updateTimer.stop();
     nivelTimer.stop();
+
+    if (musicaFondo) musicaFondo->pause();
 }
 
 void GameWidget::mostrarVictoria() {
@@ -315,11 +375,15 @@ void GameWidget::mostrarVictoria() {
     texto->setBrush(Qt::white);
     texto->setFont(QFont("Arial", 24));
     texto->setPos(250, 250);
+    texto->setZValue(100);
     scene->addItem(texto);
 
     if (botonReiniciar) botonReiniciar->show();
+
     updateTimer.stop();
     nivelTimer.stop();
+
+    if (musicaFondo) musicaFondo->pause();
 }
 
 void GameWidget::reiniciarNivel() {
@@ -343,6 +407,12 @@ void GameWidget::reiniciarNivel() {
         disconnect(nivel, nullptr, this, nullptr);
         delete nivel;
         nivel = nullptr;
+    }
+
+    if (musicaFondo) {
+        musicaFondo->stop();
+        musicaFondo->setSource(QUrl("qrc:/audio/musicaFondo.mp3"));
+        musicaFondo->play();
     }
 
     nivel = new NivelLondres(this);
@@ -375,6 +445,6 @@ void GameWidget::reiniciarNivel() {
     updateTimer.start(16);
     nivelTimer.start(1000);
 
-    qDebug() << "Nivel reiniciado y explosiones reseteadas.";
+    qDebug() << "Nivel reiniciado y música reanudada.";
 }
 

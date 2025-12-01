@@ -10,6 +10,8 @@
 #include <QGraphicsSimpleTextItem>
 #include <QGraphicsRectItem>
 #include <QPushButton>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 #include "NivelLondres.h"
 #include "Soldado.h"
 
@@ -19,6 +21,7 @@ class GameWidget : public QWidget {
 public:
     explicit GameWidget(QWidget* parent = nullptr);
     ~GameWidget();
+    void resizeEvent(QResizeEvent *event) override;
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -65,6 +68,9 @@ private:
     int tiempoRestante;
     QPushButton* botonReiniciar;
     QMap<QString, QPixmap> spriteCache;
+
+    QMediaPlayer* musicaFondo;
+    QAudioOutput* audioOutput;
 };
 
 #endif // GAMEWIDGET_H

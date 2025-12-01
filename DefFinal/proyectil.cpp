@@ -1,27 +1,33 @@
-#include "Proyectil.h"
+#include "proyectil.h"
 
-Proyectil::Proyectil(QObject* parent)
-    : EntidadMovil(parent), daño(25.0f)
-{}
+Proyectil::Proyectil(QObject* parent,
+                     const QVector2D& posInicial,
+                     const QVector2D& velInicial,
+                     float potencia,
+                     float danoInicial,
+                     float radioColisionInicial)
+    : EntidadMovil(parent, posInicial, 0.1f, radioColisionInicial, ENEMIGO),
+    daño(danoInicial)
+{
+    setVelocidad(velInicial + velInicial.normalized() * potencia);
+}
 
 void Proyectil::actualizar(float dt) {
     aplicarFisica(dt);
-
-
 }
 
 bool Proyectil::colisionaCon(const EntidadJuego* otra) const {
-    return (posicion - otra->getPosicion()).length() < 30.0f;
+    float dist = (getPosicion() - otra->getPosicion()).length();
+    return dist < (getRadioColision() + otra->getRadioColision());
 }
 
 void Proyectil::lanzar(const QVector2D& direccion, float potencia) {
-    velocidad = direccion.normalized() * potencia;
+    setVelocidad(direccion.normalized() * potencia);
 }
 
-float Proyectil::getDaño() const {
-    return daño;
-}
-
-void Proyectil::setDaño(float d) {
-    daño = d;
+void Proyectil::pintar(QPainter* pintor) {
+    pintor->setBrush(Qt::red);
+    pintor->setPen(Qt::NoPen);
+    pintor->drawEllipse(QPointF(getPosicion().x(), getPosicion().y()),
+                        getRadioColision(), getRadioColision());
 }

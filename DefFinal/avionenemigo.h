@@ -14,6 +14,7 @@ public:
     void actualizar(float dt) override;
     bool colisionaCon(const EntidadJuego* otra) const override;
     bool verificaImpacto(const EntidadJuego* jugador) const;
+    void pintar(QPainter* pintor) override; // AÑADIDO
 
     void inicializarMotorAprendizaje();
     void adaptarEstrategia(const QQueue<QVector2D>& historialJugador);
@@ -29,4 +30,4 @@ private:
     bool bombarderoDerecha;
 };
 
-#endif // AVIONENEMIGO_H
+#endif

@@ -1,19 +1,17 @@
 #include "Soldado.h"
 
 Soldado::Soldado(QObject* parent)
-    : EntidadJuego(parent),
+    : EntidadJuego(parent, QVector2D(400,450), 1.0f, 30.0f, JUGADOR),
     factorInercia(0.85f),
     direccionActual(0, 0),
     velocidadMax(180.0f),
     invulnerableTimer(0.0f)
 {
-    setTipoEntidad(JUGADOR);
     setVida(100.0f);
-    setPosicion(QVector2D(400, 450));
 }
 
 void Soldado::aplicarFuerza(const QVector2D& fuerza) {
-    velocidad += fuerza;
+    setVelocidad(getVelocidad() + fuerza);
 }
 
 void Soldado::actualizar(float dt) {
@@ -22,18 +20,35 @@ void Soldado::actualizar(float dt) {
     }
 
     QVector2D objetivo = direccionActual * velocidadMax;
-    velocidad = velocidad * factorInercia + objetivo * (1.0f - factorInercia);
+    setVelocidad(getVelocidad() * factorInercia + objetivo * (1.0f - factorInercia));
+    setPosicion(getPosicion() + getVelocidad() * dt);
 
-    posicion += velocidad * dt;
-
-    posicion.setX(qBound(50.0f, posicion.x(), 750.0f));
-    posicion.setY(qBound(400.0f, posicion.y(), 550.0f));
+    float x = qBound(50.0f, getPosicion().x(), 750.0f);
+    float y = qBound(400.0f, getPosicion().y(), 550.0f);
+    setPosicion(QVector2D(x, y));
 
     registrarPosicion();
 }
 
 bool Soldado::colisionaCon(const EntidadJuego* otra) const {
-    return (posicion - otra->getPosicion()).length() < 30.0f;
+    float dist = (getPosicion() - otra->getPosicion()).length();
+    return dist < (getRadioColision() + otra->getRadioColision());
+}
+
+// IMPLEMENTACIÓN AÑADIDA
+void Soldado::pintar(QPainter* pintor) {
+    // Usar sprite del caché si está disponible, o un placeholder
+    QPixmap sprite(":/imagenes/Parado1.png");
+    if (!sprite.isNull()) {
+        QRectF rect(getPosicion().x() - 30, getPosicion().y() - 30, 60, 60);
+        pintor->drawPixmap(rect.toRect(), sprite);
+    } else {
+        // Placeholder: círculo azul para el soldado
+        pintor->setBrush(Qt::blue);
+        pintor->setPen(Qt::NoPen);
+        pintor->drawEllipse(QPointF(getPosicion().x(), getPosicion().y()),
+                            getRadioColision(), getRadioColision());
+    }
 }
 
 void Soldado::recibirInput(const QVector2D& direccion) {
@@ -47,10 +62,10 @@ void Soldado::recibirInput(const QVector2D& direccion) {
 void Soldado::reaccionarAExplosión() {
     if (invulnerableTimer > 0.0f) return;
 
-    invulnerableTimer = invulnerableDuration;
+    invulnerableTimer = 0.5f;
     setVida(qMax(0.0f, getVida() - 25.0f));
 
-    velocidad += QVector2D(-direccionActual.x(), -direccionActual.y()) * 80.0f;
+    setVelocidad(getVelocidad() + QVector2D(-direccionActual.x(), -direccionActual.y()) * 80.0f);
 }
 
 const QQueue<QVector2D>& Soldado::getHistorialMovimiento() const {
@@ -58,7 +73,7 @@ const QQueue<QVector2D>& Soldado::getHistorialMovimiento() const {
 }
 
 void Soldado::registrarPosicion() {
-    historialMovimiento.enqueue(posicion);
+    historialMovimiento.enqueue(getPosicion());
     const int maxMuestras = 60;
     while (historialMovimiento.size() > maxMuestras) {
         historialMovimiento.dequeue();

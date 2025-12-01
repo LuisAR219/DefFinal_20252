@@ -1,104 +1,64 @@
 #include "GameWidget.h"
+#include "ui_mainwindow.h"
 #include <QGraphicsPixmapItem>
+#include <QPainter>
 #include <QDebug>
-#include <QMessageBox>
-#include <QUrl>
-#include <QResizeEvent>
 #include <QVBoxLayout>
 #include <QFile>
+#include "Nivel1.h"
+#include "Nivel2.h"
+#include "NivelLondres.h"
+#include "Soldado.h"
+#include "TanqueJugador.h"
+#include "Barco.h"
+#include "Obstaculo.h"
 
 GameWidget::GameWidget(QWidget* parent)
     : QWidget(parent),
     scene(new QGraphicsScene(this)),
     view(new QGraphicsView(scene, this)),
-    nivel(new NivelLondres(this)),
-    soldadoJugador(nullptr),
+    nivel(nullptr),
+    jugador(nullptr),
     direccionInput(0, 0),
     frameIndex(0),
     frameCounter(0),
-    bombarderoX(0),
-    bombarderoDerecha(true),
-    tiempoRestante(10),
-    vidaMax(3),
+    nivelActual(0),
+    fondoImagen(),
+    fondoImagenLondres(),
+    tiempoRestante(60),
+    vidaMax(5),
     vidaActual(vidaMax),
     tiempoHUD(nullptr),
     explosionesHUD(nullptr),
     estadoHUD(nullptr),
     vidaBarra(nullptr),
-    botonReiniciar(nullptr),
-    musicaFondo(nullptr),
-    audioOutput(nullptr)
+    botonReiniciar(nullptr)
 {
-    qDebug() << "=== INICIANDO GameWidget ===";
+    scene->setSceneRect(0, 0, 800, 600);
 
-    if (!nivel) {
-        qFatal("ERROR: No se pudo crear NivelLondres");
-        return;
-    }
-
-    nivel->inicializar();
-    soldadoJugador = nivel->getJugador();
-
-    if (!soldadoJugador) {
-        qCritical() << "ERROR CRÍTICO: soldadoJugador es nullptr!";
-        QMessageBox::critical(this, "Error Fatal", "No se pudo crear el jugador.");
-        return;
-    }
-
-    /* ---------- CONFIGURACIÓN DEL VIEW ---------- */
     view->setRenderHint(QPainter::Antialiasing);
     view->setCacheMode(QGraphicsView::CacheBackground);
     view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     view->setDragMode(QGraphicsView::NoDrag);
     view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    view->setStyleSheet("background-color: black;");   // bordes negros
+    view->setStyleSheet("background-color: black;");
 
-    scene->setSceneRect(0, 0, 800, 600);              // mundo lógico 800×600
-
-    /* ---------- LAYOUT PARA EXPANSIÓN ---------- */
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(view);
     layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
 
-    /* ---------- CARGAR RECURSOS ---------- */
     cargarSprites();
-    crearHUD();
 
-    /* ---------- BOTÓN REINICIAR ---------- */
     botonReiniciar = new QPushButton("Reiniciar", this);
     botonReiniciar->setGeometry(650, 20, 100, 30);
     botonReiniciar->hide();
     connect(botonReiniciar, &QPushButton::clicked, this, &GameWidget::reiniciarNivel);
 
-    /* ---------- TIMERS ---------- */
     connect(&updateTimer, &QTimer::timeout, this, &GameWidget::onUpdate);
-    connect(&nivelTimer,  &QTimer::timeout, this, &GameWidget::actualizarTiempo);
+    connect(&nivelTimer, &QTimer::timeout, this, &GameWidget::actualizarTiempo);
     updateTimer.start(16);
-    nivelTimer.start(1000);
-
-    /* ---------- SEÑALES ---------- */
-    connect(nivel, &NivelLondres::nivelFallido, this, &GameWidget::mostrarDerrota);
-
-    /* ---------- AUDIO ---------- */
-    audioOutput = new QAudioOutput(this);
-    musicaFondo = new QMediaPlayer(this);
-    musicaFondo->setAudioOutput(audioOutput);
-    musicaFondo->setSource(QUrl("qrc:/audio/musicaFondo.wav"));
-    audioOutput->setVolume(0.5f);
-    musicaFondo->setLoops(QMediaPlayer::Infinite);
-    musicaFondo->play();
-
-    QFile wavFile(":/audio/musicaFondo.wav");
-    if (!wavFile.exists()) {
-        qDebug() << "❌ WAV NO encontrado en recursos";
-    } else {
-        qDebug() << "✅ WAV encontrado, tamaño" << wavFile.size() << "bytes";
-    }
-
-    /* ---------- CACHE SPRITES ---------- */
-    nivel->setSpriteCache(spriteCache);
 
     qDebug() << "GameWidget inicializado correctamente.";
 }
@@ -111,46 +71,106 @@ GameWidget::~GameWidget() {
             delete item;
         }
     }
-    if (musicaFondo) {
-        musicaFondo->stop();
-        musicaFondo->deleteLater();
-    }
-    if (audioOutput) audioOutput->deleteLater();
+    if (nivel) delete nivel;
 }
 
-void GameWidget::crearHUD() {
-    if (!scene) {
-        qCritical() << "crearHUD: scene es nullptr!";
+void GameWidget::inicializarNivel(int numeroNivel) {
+    if (nivel) {
+        disconnect(nivel, nullptr, this, nullptr);
+        delete nivel;
+        nivel = nullptr;
+    }
+
+    jugador = nullptr;
+
+    switch(numeroNivel) {
+    case 1:
+        nivel = new Nivel1(this);
+        tiempoRestante = 60;
+        vidaMax = 5;
+        break;
+    case 2:
+        nivel = new Nivel2(this);
+        tiempoRestante = 20;
+        vidaMax = 1;
+        break;
+    case 3:
+        nivel = new NivelLondres(this);
+        tiempoRestante = 10;
+        vidaMax = 3;
+        break;
+    default:
+        qCritical() << "Número de nivel inválido:" << numeroNivel;
         return;
     }
 
-    if (tiempoHUD) { scene->removeItem(tiempoHUD); delete tiempoHUD; }
-    if (explosionesHUD) { scene->removeItem(explosionesHUD); delete explosionesHUD; }
-    if (estadoHUD) { scene->removeItem(estadoHUD); delete estadoHUD; }
-    if (vidaBarra) { scene->removeItem(vidaBarra); delete vidaBarra; }
+    nivelActual = numeroNivel;
+    vidaActual = vidaMax;
 
-    tiempoHUD = new QGraphicsSimpleTextItem("Tiempo: 10");
-    tiempoHUD->setBrush(Qt::yellow);
-    tiempoHUD->setFont(QFont("Arial", 16));
-    tiempoHUD->setPos(10, 10);
-    scene->addItem(tiempoHUD);
+    nivel->inicializar();
 
-    explosionesHUD = new QGraphicsSimpleTextItem("Explosiones: 0");
-    explosionesHUD->setBrush(Qt::red);
-    explosionesHUD->setFont(QFont("Arial", 16));
-    explosionesHUD->setPos(10, 30);
-    scene->addItem(explosionesHUD);
+    if (nivelActual == 1) {
+        Nivel1* nivel1 = dynamic_cast<Nivel1*>(nivel);
+        if (nivel1) jugador = nivel1->getJugador();
+    } else if (nivelActual == 3) {
+        NivelLondres* nivelLondres = dynamic_cast<NivelLondres*>(nivel);
+        if (nivelLondres) jugador = nivelLondres->getJugador();
+    }
 
-    estadoHUD = new QGraphicsSimpleTextItem("Estado: Vivo");
-    estadoHUD->setBrush(Qt::green);
-    estadoHUD->setFont(QFont("Arial", 16));
-    estadoHUD->setPos(10, 50);
-    scene->addItem(estadoHUD);
+    if (!scene) {
+        qCritical() << "Scene es nullptr en inicializarNivel";
+        return;
+    }
 
-    vidaBarra = new QGraphicsRectItem(QRectF(10, 70, 90, 15));
-    vidaBarra->setPen(QPen(Qt::black));
-    vidaBarra->setBrush(QBrush(Qt::green));
-    scene->addItem(vidaBarra);
+    QList<QGraphicsItem*> items = scene->items();
+    for (QGraphicsItem* item : items) {
+        if (item != tiempoHUD && item != explosionesHUD &&
+            item != estadoHUD && item != vidaBarra) {
+            scene->removeItem(item);
+            delete item;
+        }
+    }
+
+    QPixmap* fondoActual = nullptr;
+    if (nivelActual == 2) {
+        fondoActual = &spriteCache["fondo2"];
+    } else if (nivelActual == 3) {
+        fondoActual = &fondoImagenLondres;
+    } else {
+        fondoActual = &fondoImagen;
+    }
+
+    if (fondoActual && !fondoActual->isNull()) {
+        QGraphicsPixmapItem* fondoItem = new QGraphicsPixmapItem(
+            fondoActual->scaled(scene->sceneRect().size().toSize(),
+                                Qt::IgnoreAspectRatio,
+                                Qt::SmoothTransformation));
+        fondoItem->setZValue(-100);
+        scene->addItem(fondoItem);
+    }
+
+    connect(nivel, SIGNAL(nivelFallido()), this, SLOT(mostrarDerrota()));
+    connect(nivel, SIGNAL(nivelCompletado()), this, SLOT(mostrarVictoria()));
+
+    nivelTimer.start(1000);
+
+
+    if (nivelActual == 1) {
+        Nivel1* nivel1 = dynamic_cast<Nivel1*>(nivel);
+        if (nivel1) nivel1->setSpriteCache(spriteCache);
+    } else if (nivelActual == 3) {
+        NivelLondres* nivelLondres = dynamic_cast<NivelLondres*>(nivel);
+        if (nivelLondres) nivelLondres->setSpriteCache(spriteCache);
+    }
+
+    frameIndex = 0;
+    frameCounter = 0;
+    direccionInput = QVector2D(0, 0);
+
+    if (botonReiniciar) botonReiniciar->hide();
+
+    crearHUD();
+    actualizarHUD();
 }
 
 void GameWidget::cargarSprites() {
@@ -159,10 +179,13 @@ void GameWidget::cargarSprites() {
     const QString basePath = ":/sprites/imagenes/";
 
     fondoImagen = QPixmap(basePath + "fondo.png");
-    qDebug() << "fondo.png -> Tamaño:" << fondoImagen.size() << "Cargado:" << !fondoImagen.isNull();
+    fondoImagenLondres = QPixmap(basePath + "fondo1.png");
+    spriteCache["fondo2"] = QPixmap(basePath + "fondo2.png");
 
     spriteCache["bombardero"] = QPixmap(basePath + "Avion.png");
+    spriteCache["barco"] = QPixmap(basePath + "barco1.png");
     spriteCache["bomba"] = QPixmap(basePath + "Bala.png");
+    spriteCache["bombaLondres"] = QPixmap(basePath + "Bala1.png");
     spriteCache["explosion"] = QPixmap(basePath + "Fuego.png");
     spriteCache["soldado"] = QPixmap(basePath + "Parado1.png");
 
@@ -174,33 +197,87 @@ void GameWidget::cargarSprites() {
     }
     frameParado = QPixmap(basePath + "Parado1.png");
 
+    spriteCache["tanque"] = QPixmap(basePath + "tanque.png");
+    spriteCache["tanqueEne"] = QPixmap(basePath + "tanqueEne.png");
+    spriteCache["rueda"] = QPixmap(basePath + "rueda.png");
+    spriteCache["barril"] = QPixmap(basePath + "barril.png");
+    spriteCache["mina"] = QPixmap(basePath + "mina.png");
+
+    qDebug() << "Sprites cargados - fondo1:" << !fondoImagenLondres.isNull()
+             << "Bala1:" << !spriteCache.value("bombaLondres").isNull();
     qDebug() << "=== FIN VERIFICACIÓN ===\n";
 }
 
-QString GameWidget::obtenerSpriteParaEntidad(EntidadJuego* e) {
-    if (!e) return "bomba";
+QString GameWidget::obtenerSpriteKey(EntidadJuego* entidad) {
+    if (!entidad) return "explosion";
 
-    if (dynamic_cast<Proyectil*>(e)) return "bomba";
-    if (dynamic_cast<AvionEnemigo*>(e)) return "bombardero";
-    if (e == soldadoJugador) return "soldado";
+    // Jugador
+    if (entidad == jugador) {
+        if (nivelActual == 3) return "soldado";
+        if (nivelActual == 1) return "tanque";
+        return "soldado";
+    }
+
+    // Proyectiles normales (Nivel 1 y 3)
+    if (dynamic_cast<Proyectil*>(entidad)) {
+        return (nivelActual == 3) ? "bombaLondres" : "bomba";
+    }
+
+    // Proyectiles balísticos (Nivel 2)
+    if (dynamic_cast<ProyectilBalistico*>(entidad)) {
+        return "bomba";
+    }
+
+    // Avión enemigo (Nivel 3)
+    if (dynamic_cast<AvionEnemigo*>(entidad)) {
+        return "bombardero";
+    }
+
+    // Tanques enemigos (Nivel 1)
+    if (dynamic_cast<Enemigo*>(entidad)) {
+        return "tanqueEne";
+    }
+
+    // Barcos (Nivel 2) - tienen su propio pintar, pero usamos placeholder
+    if (dynamic_cast<Barco*>(entidad)) {
+        return "explosion"; // Placeholder, renderizaremos con rectángulo
+    }
+
+    // Obstáculos (Nivel 1) - tienen su propio pintar
+    if (dynamic_cast<Obstaculo*>(entidad)) {
+        return "explosion"; // Placeholder, renderizaremos con rectángulo
+    }
 
     return "explosion";
 }
 
-QSize GameWidget::obtenerTamañoSprite(EntidadJuego* e) {
-    QString key = obtenerSpriteParaEntidad(e);
-    if (!spriteCache.contains(key)) return QSize(30, 30);
+QRectF GameWidget::calcularRectanguloSprite(EntidadJuego* entidad, const QString& spriteKey) {
+    QVector2D pos = entidad->getPosicion();
+    QPixmap sprite = spriteCache[spriteKey];
 
-    QPixmap original = spriteCache[key];
-    if (key == "bomba") {
-        return original.scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation).size();
+    if (spriteKey == "bomba" || spriteKey == "bombaLondres") {
+        return QRectF(pos.x() - 15, pos.y() - 15, 30, 30);
     }
-    return original.size();
+    else if (spriteKey == "bombardero") {
+        // El avión se dibuja en una posición fija Y con X variable
+        return QRectF(pos.x() - sprite.width()/2, -180, sprite.width(), sprite.height());
+    }
+    else if (spriteKey == "tanque") {
+        return QRectF(pos.x() - 24, pos.y() - 24, 48, 48);
+    }
+    else if (spriteKey == "tanqueEne") {
+        return QRectF(pos.x() - 20, pos.y() - 20, 40, 40);
+    }
+    else if (spriteKey == "soldado") {
+        return QRectF(pos.x() - 30, pos.y() - 40, 60, 80);
+    }
+
+    // Default
+    return QRectF(pos.x() - 20, pos.y() - 20, 40, 40);
 }
 
 QPixmap GameWidget::spriteJugador() {
-    if (framesCorriendo.isEmpty()) return QPixmap();
-    if (frameParado.isNull()) return QPixmap();
+    if (framesCorriendo.isEmpty() || frameParado.isNull()) return QPixmap();
 
     if (direccionInput.isNull()) return frameParado;
 
@@ -213,20 +290,45 @@ QPixmap GameWidget::spriteJugador() {
 }
 
 void GameWidget::keyPressEvent(QKeyEvent* event) {
-    if (!soldadoJugador) return;
+    if (event->key() == Qt::Key_F11) {
+        if (isFullScreen()) showNormal(); else showFullScreen();
+        return;
+    }
+
+    if (nivelActual == 2) {
+        Nivel2* nivel2 = dynamic_cast<Nivel2*>(nivel);
+        if (nivel2) nivel2->obtenerCanon()->procesarTecla(event->key(), true);
+        return;
+    }
+
+    if (!jugador) return;
 
     switch (event->key()) {
     case Qt::Key_W: direccionInput.setY(-1); break;
     case Qt::Key_S: direccionInput.setY(1); break;
     case Qt::Key_A: direccionInput.setX(-1); break;
     case Qt::Key_D: direccionInput.setX(1); break;
-    default: return;
+    default: QWidget::keyPressEvent(event); return;
     }
 
-    soldadoJugador->recibirInput(direccionInput);
+    if (nivelActual == 1) {
+        TanqueJugador* tanque = dynamic_cast<TanqueJugador*>(jugador);
+        if (tanque) tanque->teclaPresionada(event->key());
+    } else if (nivelActual == 3) {
+        Soldado* soldado = dynamic_cast<Soldado*>(jugador);
+        if (soldado) soldado->recibirInput(direccionInput);
+    }
 }
 
 void GameWidget::keyReleaseEvent(QKeyEvent* event) {
+    if (nivelActual == 2) {
+        Nivel2* nivel2 = dynamic_cast<Nivel2*>(nivel);
+        if (nivel2) nivel2->obtenerCanon()->procesarTecla(event->key(), false);
+        return;
+    }
+
+    if (!jugador) return;
+
     switch (event->key()) {
     case Qt::Key_W:
     case Qt::Key_S: direccionInput.setY(0); break;
@@ -235,19 +337,25 @@ void GameWidget::keyReleaseEvent(QKeyEvent* event) {
     default: return;
     }
 
-    if (soldadoJugador) soldadoJugador->recibirInput(direccionInput);
+    if (nivelActual == 1) {
+        TanqueJugador* tanque = dynamic_cast<TanqueJugador*>(jugador);
+        if (tanque) tanque->teclaLiberada(event->key());
+    } else if (nivelActual == 3) {
+        Soldado* soldado = dynamic_cast<Soldado*>(jugador);
+        if (soldado) soldado->recibirInput(direccionInput);
+    }
 }
 
 void GameWidget::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
-    if (view && scene) {
-        view->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
-    }
+    if (view && scene) view->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
 }
 
-void GameWidget::onUpdate() {
-    if (!scene || !nivel || !soldadoJugador) return;
+void GameWidget::onUpdate()
+{
+    if (!scene || !nivel) return;
 
+    // 1. Limpiar escena excepto HUD
     QList<QGraphicsItem*> items = scene->items();
     for (QGraphicsItem* item : items) {
         if (item != tiempoHUD && item != explosionesHUD &&
@@ -257,61 +365,141 @@ void GameWidget::onUpdate() {
         }
     }
 
-    if (!fondoImagen.isNull()) {
+    // 2. Fondos PRIMERO (más atrás que cualquier sprite)
+    QPixmap* fondoActual = nullptr;
+    if (nivelActual == 2) {
+        fondoActual = &spriteCache["fondo2"];        // Pearl Harbor
+    } else if (nivelActual == 3) {
+        fondoActual = &fondoImagenLondres;           // Batalla de Londres
+    } else {
+        fondoActual = &fondoImagen;                  // Kursk
+    }
+
+    if (fondoActual && !fondoActual->isNull()) {
         QGraphicsPixmapItem* fondoItem = new QGraphicsPixmapItem(
-            fondoImagen.scaled(scene->sceneRect().size().toSize(),
-                               Qt::IgnoreAspectRatio,
-                               Qt::SmoothTransformation));
-        fondoItem->setZValue(-100);
+            fondoActual->scaled(scene->sceneRect().size().toSize(),
+                                Qt::IgnoreAspectRatio,
+                                Qt::SmoothTransformation));
+        fondoItem->setZValue(-200);
         scene->addItem(fondoItem);
     }
 
+    // 3. Cañón del nivel 2 (encima del fondo)
+    if (nivelActual == 2) {
+        Nivel2* nivel2 = qobject_cast<Nivel2*>(nivel);
+        if (nivel2) {
+            Canon* canon = nivel2->obtenerCanon();
+            QPixmap canonPix(64, 32);
+            canonPix.fill(Qt::darkGray);
+            QGraphicsPixmapItem* canonItem = new QGraphicsPixmapItem(canonPix);
+            QVector2D boca = canon->obtenerPosicionBoca();
+            canonItem->setPos(boca.x() - 32, boca.y() - 16);
+            canonItem->setZValue(10);
+            scene->addItem(canonItem);
+        }
+    }
+
+    // 4. Resto de entidades
     const auto& entidades = nivel->getEntidades();
     for (EntidadJuego* entidad : entidades) {
         if (!entidad) continue;
 
-        if (entidad == soldadoJugador) {
+        // Jugador nivel 3 (soldado animado)
+        if (entidad == jugador && nivelActual == 3) {
             QPixmap spriteJugadorActual = spriteJugador();
             if (!spriteJugadorActual.isNull()) {
                 QGraphicsPixmapItem* jugadorItem = new QGraphicsPixmapItem(spriteJugadorActual);
-                float offsetY = 40;
-                jugadorItem->setPos(entidad->getPosicion().x(),
-                                    entidad->getPosicion().y() - offsetY);
+                jugadorItem->setPos(entidad->getPosicion().x() - spriteJugadorActual.width()/2,
+                                    entidad->getPosicion().y() - spriteJugadorActual.height());
                 jugadorItem->setZValue(10);
                 scene->addItem(jugadorItem);
             }
             continue;
         }
 
-        QString spriteKey = obtenerSpriteParaEntidad(entidad);
-        QPixmap spriteOriginal = spriteCache.value(spriteKey);
+        QString spriteKey = obtenerSpriteKey(entidad);
 
-        if (!spriteOriginal.isNull()) {
-            QGraphicsPixmapItem* item = new QGraphicsPixmapItem();
-
-            if (spriteKey == "bomba") {
-                QPixmap bombaEscalada = spriteOriginal.scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                item->setPixmap(bombaEscalada);
-            } else {
-                item->setPixmap(spriteOriginal);
-            }
-
-            if (spriteKey == "bombardero") {
-                item->setPos(entidad->getPosicion().x(), -180);
-                item->setZValue(-5);
-            } else {
-                item->setPos(entidad->getPosicion().x(), entidad->getPosicion().y());
+        // Barcos nivel 2 → sprite barco1.png 3× grande
+        if (Barco* barco = dynamic_cast<Barco*>(entidad)) {
+            QPixmap spriteBarco = spriteCache["barco"];
+            if (!spriteBarco.isNull()) {
+                QPixmap scaled = spriteBarco.scaled(240, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                QGraphicsPixmapItem* item = new QGraphicsPixmapItem(scaled);
+                item->setPos(barco->getPosicion().x() - scaled.width()/2,
+                             barco->getPosicion().y() - scaled.height()/2);
                 item->setZValue(5);
-            }
+                scene->addItem(item);
 
+                // ✅ Hitbox mucho más grande que el sprite visual
+                float factor = 2.5f;
+                barco->setAnchoHitbox(scaled.width() * factor);
+                barco->setAltoHitbox(scaled.height() * factor);
+            } else {
+                QRectF rect(entidad->getPosicion().x() - 120, entidad->getPosicion().y() - 60, 240, 120);
+                QGraphicsRectItem* item = new QGraphicsRectItem(rect);
+                item->setBrush(Qt::darkCyan);
+                item->setPen(QPen(Qt::red));
+                item->setZValue(5);
+                scene->addItem(item);
+            }
+            continue;
+        }
+
+        // Obstáculos nivel 1 (rectángulos placeholder)
+        if (dynamic_cast<Obstaculo*>(entidad)) {
+            QRectF rect(entidad->getPosicion().x() - 15, entidad->getPosicion().y() - 15, 30, 30);
+            QGraphicsRectItem* item = new QGraphicsRectItem(rect);
+            item->setBrush(Qt::yellow);
+            item->setPen(QPen(Qt::white));
             item->setZValue(5);
             scene->addItem(item);
+            continue;
+        }
+
+        // Sprites normales
+        QPixmap spriteOriginal = spriteCache.value(spriteKey);
+        if (spriteOriginal.isNull()) {
+            qWarning() << "Sprite no encontrado:" << spriteKey;
+            continue;
+        }
+
+        QGraphicsPixmapItem* item = new QGraphicsPixmapItem();
+        if (spriteKey == "bomba" || spriteKey == "bombaLondres") {
+            QPixmap scaled = spriteOriginal.scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            item->setPixmap(scaled);
+        } else {
+            item->setPixmap(spriteOriginal);
+        }
+
+        QRectF rect = calcularRectanguloSprite(entidad, spriteKey);
+        item->setPos(rect.x(), rect.y());
+
+        int zValue = 5;
+        if (entidad == jugador) zValue = 10;
+        else if (dynamic_cast<Proyectil*>(entidad) || dynamic_cast<ProyectilBalistico*>(entidad)) zValue = 8;
+        else if (dynamic_cast<AvionEnemigo*>(entidad)) zValue = -5;
+        else if (dynamic_cast<Enemigo*>(entidad)) zValue = 5;
+
+        item->setZValue(zValue);
+        scene->addItem(item);
+    }
+
+    if (nivelActual == 2) {
+        Nivel2* nivel2 = qobject_cast<Nivel2*>(nivel);
+        if (nivel2 && nivel2->getBarcosDerrotados() >= 4) {
+            emit nivelCompletado(); // ← Volver al menú principal
+            return;
         }
     }
 
-    for (QGraphicsItem* msg : scene->items()) {
-        if (auto txt = qgraphicsitem_cast<QGraphicsSimpleTextItem*>(msg))
-            txt->setZValue(100);
+
+    // ✅ Derrota por tiempo en nivel 2
+    if (nivelActual == 2) {
+        Nivel2* nivel2 = qobject_cast<Nivel2*>(nivel);
+        if (nivel2 && tiempoRestante <= 0 && nivel2->getBarcosDerrotados() < 4) {
+            mostrarDerrota();
+            return;
+        }
     }
 
     actualizarHUD();
@@ -319,15 +507,31 @@ void GameWidget::onUpdate() {
 
 void GameWidget::actualizarHUD() {
     if (tiempoHUD) tiempoHUD->setText(QString("Tiempo: %1").arg(tiempoRestante));
-    if (explosionesHUD) explosionesHUD->setText(
-            QString("Explosiones: %1").arg(nivel->getExplosionesRecibidas())
-            );
-    if (estadoHUD && soldadoJugador) {
-        QString estado = soldadoJugador->getVida() > 0 ? "Vivo" : "Muerto";
+
+    if (nivelActual == 1) {
+        Nivel1* nivel1 = dynamic_cast<Nivel1*>(nivel);
+        if (nivel1 && explosionesHUD) {
+            explosionesHUD->setText(QString("Enemigos: %1").arg(nivel1->contarEnemigosActivos()));
+        }
+    } else if (nivelActual == 2) {
+        Nivel2* nivel2 = dynamic_cast<Nivel2*>(nivel);
+        if (nivel2 && explosionesHUD) {
+            explosionesHUD->setText(QString("Barcos: %1/%2").arg(nivel2->getBarcosDerrotados()).arg(nivel2->getTotalBarcos()));
+        }
+    } else if (nivelActual == 3) {
+        NivelLondres* nivelLondres = dynamic_cast<NivelLondres*>(nivel);
+        if (nivelLondres && explosionesHUD) {
+            explosionesHUD->setText(QString("Explosiones: %1").arg(nivelLondres->getExplosionesRecibidas()));
+        }
+    }
+
+    if (estadoHUD && jugador) {
+        QString estado = jugador->getVida() > 0 ? "Vivo" : "Muerto";
         estadoHUD->setText(QString("Estado: %1").arg(estado));
     }
-    if (vidaBarra && soldadoJugador) {
-        float vidaPercent = soldadoJugador->getVida() / 100.0f;
+
+    if (vidaBarra && jugador) {
+        float vidaPercent = jugador->getVida() / 100.0f;
         int width = qBound(0, static_cast<int>(90 * vidaPercent), 90);
         vidaBarra->setRect(10, 70, width, 15);
 
@@ -340,11 +544,8 @@ void GameWidget::actualizarHUD() {
 void GameWidget::actualizarTiempo() {
     if (tiempoRestante <= 0) {
         mostrarVictoria();
-        updateTimer.stop();
-        nivelTimer.stop();
         return;
     }
-
     tiempoRestante--;
     actualizarHUD();
 }
@@ -363,8 +564,6 @@ void GameWidget::mostrarDerrota() {
     if (botonReiniciar) botonReiniciar->show();
     updateTimer.stop();
     nivelTimer.stop();
-
-    if (musicaFondo) musicaFondo->pause();
 }
 
 void GameWidget::mostrarVictoria() {
@@ -379,72 +578,49 @@ void GameWidget::mostrarVictoria() {
     scene->addItem(texto);
 
     if (botonReiniciar) botonReiniciar->show();
-
     updateTimer.stop();
     nivelTimer.stop();
 
-    if (musicaFondo) musicaFondo->pause();
+    emit nivelCompletado();
 }
 
 void GameWidget::reiniciarNivel() {
     qDebug() << "=== REINICIANDO NIVEL ===";
-
-    updateTimer.stop();
-    nivelTimer.stop();
-
-    QList<QGraphicsItem*> items = scene->items();
-    for (QGraphicsItem* item : items) {
-        if (item != tiempoHUD && item != explosionesHUD &&
-            item != estadoHUD && item != vidaBarra) {
-            scene->removeItem(item);
-            delete item;
-        }
-    }
-
-    if (botonReiniciar) botonReiniciar->hide();
-
-    if (nivel) {
-        disconnect(nivel, nullptr, this, nullptr);
-        delete nivel;
-        nivel = nullptr;
-    }
-
-    if (musicaFondo) {
-        musicaFondo->stop();
-        musicaFondo->setSource(QUrl("qrc:/audio/musicaFondo.mp3"));
-        musicaFondo->play();
-    }
-
-    nivel = new NivelLondres(this);
-    nivel->inicializar();
-    nivel->resetearExplosiones();
-    soldadoJugador = nivel->getJugador();
-
-    if (!soldadoJugador) {
-        qCritical() << "ERROR: No se pudo crear jugador al reiniciar!";
-        return;
-    }
-
-    connect(nivel, &NivelLondres::nivelFallido, this, &GameWidget::mostrarDerrota);
-
-    direccionInput = QVector2D(0, 0);
-    frameIndex = 0;
-    frameCounter = 0;
-    bombarderoX = 0;
-    bombarderoDerecha = true;
-    tiempoRestante = 10;
-    vidaActual = vidaMax;
-
-    if (tiempoHUD) tiempoHUD->setText("Tiempo: 10");
-    if (explosionesHUD) explosionesHUD->setText("Explosiones: 0");
-    if (estadoHUD) estadoHUD->setText("Estado: Vivo");
-    if (vidaBarra) vidaBarra->setRect(10, 70, 90, 15);
-
-    nivel->setSpriteCache(spriteCache);
-
+    inicializarNivel(nivelActual);
     updateTimer.start(16);
-    nivelTimer.start(1000);
-
-    qDebug() << "Nivel reiniciado y música reanudada.";
+    if (nivelActual != 2) nivelTimer.start(1000);
 }
+
+void GameWidget::crearHUD() {
+    if (!scene) return;
+
+    if (tiempoHUD) { scene->removeItem(tiempoHUD); delete tiempoHUD; }
+    if (explosionesHUD) { scene->removeItem(explosionesHUD); delete explosionesHUD; }
+    if (estadoHUD) { scene->removeItem(estadoHUD); delete estadoHUD; }
+    if (vidaBarra) { scene->removeItem(vidaBarra); delete vidaBarra; }
+
+    tiempoHUD = new QGraphicsSimpleTextItem("Tiempo: 60");
+    tiempoHUD->setBrush(Qt::yellow);
+    tiempoHUD->setFont(QFont("Arial", 16));
+    tiempoHUD->setPos(10, 10);
+    scene->addItem(tiempoHUD);
+
+    explosionesHUD = new QGraphicsSimpleTextItem("Enemigos: 0");
+    explosionesHUD->setBrush(Qt::red);
+    explosionesHUD->setFont(QFont("Arial", 16));
+    explosionesHUD->setPos(10, 30);
+    scene->addItem(explosionesHUD);
+
+    estadoHUD = new QGraphicsSimpleTextItem("Estado: Vivo");
+    estadoHUD->setBrush(Qt::green);
+    estadoHUD->setFont(QFont("Arial", 16));
+    estadoHUD->setPos(10, 50);
+    scene->addItem(estadoHUD);
+
+    vidaBarra = new QGraphicsRectItem(QRectF(10, 70, 90, 15));
+    vidaBarra->setPen(QPen(Qt::black));
+    vidaBarra->setBrush(QBrush(Qt::green));
+    scene->addItem(vidaBarra);
+}
+
 

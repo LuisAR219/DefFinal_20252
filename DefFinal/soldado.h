@@ -4,6 +4,7 @@
 #include "EntidadJuego.h"
 #include <QQueue>
 #include <QVector2D>
+#include <QPainter> // AÑADIDO
 
 class Soldado : public EntidadJuego {
     Q_OBJECT
@@ -14,6 +15,7 @@ public:
     void actualizar(float dt) override;
     bool colisionaCon(const EntidadJuego* otra) const override;
     void aplicarFuerza(const QVector2D& fuerza) override;
+    void pintar(QPainter* pintor) override; // AÑADIDO
 
     void recibirInput(const QVector2D& direccion);
     void reaccionarAExplosión();
@@ -30,4 +32,4 @@ private:
     void registrarPosicion();
 };
 
-#endif // SOLDADO_H
+#endif

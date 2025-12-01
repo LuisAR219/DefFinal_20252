@@ -2,18 +2,23 @@
     <qresource prefix="/sprites">
         <file>imagenes/Avion.png</file>
         <file>imagenes/Bala.png</file>
+        <file>imagenes/Bala1.png</file>
+        <file>imagenes/barco1.png</file>
+        <file>imagenes/barril.png</file>
         <file>imagenes/Corriendo1.png</file>
         <file>imagenes/Corriendo2.png</file>
         <file>imagenes/Corriendo3.png</file>
         <file>imagenes/Corriendo4.png</file>
         <file>imagenes/Corriendo5.png</file>
         <file>imagenes/Corriendo6.png</file>
-        <file>imagenes/Fuego.png</file>
-        <file>imagenes/Parado1.png</file>
         <file>imagenes/fondo.png</file>
-    </qresource>
-    <qresource prefix="/audio">
-        <file>audio</file>
-        <file>C:/Users/Jorge/Downloads/musicaFondo.wav</file>
+        <file>imagenes/fondo1.png</file>
+        <file>imagenes/fondo2.png</file>
+        <file>imagenes/Fuego.png</file>
+        <file>imagenes/mina.png</file>
+        <file>imagenes/Parado1.png</file>
+        <file>imagenes/rueda.png</file>
+        <file>imagenes/tanque.png</file>
+        <file>imagenes/tanqueEne.png</file>
     </qresource>
 </RCC>

@@ -10,10 +10,11 @@
 #include <QGraphicsSimpleTextItem>
 #include <QGraphicsRectItem>
 #include <QPushButton>
-#include <QMediaPlayer>
-#include <QAudioOutput>
-#include "NivelLondres.h"
-#include "Soldado.h"
+#include "Nivel.h"
+
+// Forward declarations
+class Soldado;
+class TanqueJugador;
 
 class GameWidget : public QWidget {
     Q_OBJECT
@@ -22,6 +23,11 @@ public:
     explicit GameWidget(QWidget* parent = nullptr);
     ~GameWidget();
     void resizeEvent(QResizeEvent *event) override;
+    void inicializarNivel(int numeroNivel);
+
+signals:
+    void nivelCompletado();
+    void nivelFallido();
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -38,25 +44,27 @@ private:
     void cargarSprites();
     void crearHUD();
     void actualizarHUD();
-    QString obtenerSpriteParaEntidad(EntidadJuego* e);
+    QString obtenerSpriteKey(EntidadJuego* entidad);
     QPixmap spriteJugador();
+    QRectF calcularRectanguloSprite(EntidadJuego* entidad, const QString& spriteKey);
+    QString obtenerSpriteParaEntidad(EntidadJuego* e);
     QSize obtenerTamañoSprite(EntidadJuego* e);
 
     QGraphicsScene* scene;
     QGraphicsView* view;
-    NivelLondres* nivel;
+    Nivel* nivel;
+    EntidadJuego* jugador;
     QTimer updateTimer;
     QTimer nivelTimer;
     QVector2D direccionInput;
     QPixmap fondoImagen;
-    Soldado* soldadoJugador;
+    QPixmap fondoImagenLondres;
+    int nivelActual;
 
     int frameIndex;
     int frameCounter;
     QVector<QPixmap> framesCorriendo;
     QPixmap frameParado;
-    float bombarderoX;
-    bool bombarderoDerecha;
 
     QGraphicsSimpleTextItem* tiempoHUD;
     QGraphicsSimpleTextItem* explosionesHUD;
@@ -68,9 +76,6 @@ private:
     int tiempoRestante;
     QPushButton* botonReiniciar;
     QMap<QString, QPixmap> spriteCache;
-
-    QMediaPlayer* musicaFondo;
-    QAudioOutput* audioOutput;
 };
 
-#endif // GAMEWIDGET_H
+#endif

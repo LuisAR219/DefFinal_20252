@@ -12,18 +12,13 @@ class NivelLondres : public Nivel {
 
 public:
     explicit NivelLondres(QObject* parent = nullptr);
-    Soldado* getJugador() const;
-
     void inicializar() override;
     void actualizar(float dt) override;
     bool nivelCompletado() const override;
+    EntidadJuego* getJugador() const override { return soldadoJugador; }
+    void setSpriteCache(const QMap<QString, QPixmap>& cache) override { spriteCache = cache; }
     int getExplosionesRecibidas() const;
     void resetearExplosiones();
-
-    void setSpriteCache(const QMap<QString, QPixmap>& cache);
-
-signals:
-    void nivelFallido();
 
 private:
     Soldado* soldadoJugador;
@@ -34,4 +29,4 @@ private:
     QMap<QString, QPixmap> spriteCache;
 };
 
-#endif // NIVELLONDRES_H
+#endif

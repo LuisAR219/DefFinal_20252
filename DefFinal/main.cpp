@@ -1,7 +1,5 @@
 #include "mainwindow.h"
-
 #include <QApplication>
-
 #include <csignal>
 
 void crashHandler(int signal) {

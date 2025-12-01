@@ -6,7 +6,3 @@ Nivel::Nivel(QObject* parent)
     connect(&temporizadorNivel, &QTimer::timeout, this, &Nivel::onUpdate);
     temporizadorNivel.start(16);
 }
-
-void Nivel::onUpdate() {
-    actualizar(0.016f);
-}

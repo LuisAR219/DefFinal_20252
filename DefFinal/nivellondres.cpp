@@ -22,24 +22,6 @@ void NivelLondres::inicializar() {
     explosionesRecibidas = 0;
 }
 
-Soldado* NivelLondres::getJugador() const {
-    return soldadoJugador;
-}
-
-int NivelLondres::getExplosionesRecibidas() const {
-    return explosionesRecibidas;
-}
-
-void NivelLondres::setSpriteCache(const QMap<QString, QPixmap>& cache) {
-    spriteCache = cache;
-}
-
-void NivelLondres::resetearExplosiones()
-{
-    explosionesRecibidas = 0;
-    qDebug() << "Contador de explosiones reseteado a 0";
-}
-
 void NivelLondres::actualizar(float dt) {
     tiempoDisparo += dt;
 
@@ -50,9 +32,15 @@ void NivelLondres::actualizar(float dt) {
     if (tiempoDisparo >= 1.0f) {
         tiempoDisparo = 0.0f;
 
-        Proyectil* bomba = new Proyectil(nullptr);
-        bomba->setPosicion(bombarderoEnemigo->getPosicion());
-        bomba->setVelocidad(QVector2D(0, 250));
+        // CORRECCIÓN: Usar constructor válido con todos los parámetros
+        Proyectil* bomba = new Proyectil(
+            nullptr,
+            bombarderoEnemigo->getPosicion(),
+            QVector2D(0.0f, 250.0f),
+            250.0f,
+            25.0f,
+            30.0f
+            );
         bomba->setTipoEntidad(ENEMIGO);
         entidades.append(bomba);
     }
@@ -108,4 +96,13 @@ void NivelLondres::actualizar(float dt) {
 
 bool NivelLondres::nivelCompletado() const {
     return completado;
+}
+
+int NivelLondres::getExplosionesRecibidas() const {
+    return explosionesRecibidas;
+}
+
+void NivelLondres::resetearExplosiones() {
+    explosionesRecibidas = 0;
+    qDebug() << "Contador de explosiones reseteado a 0";
 }

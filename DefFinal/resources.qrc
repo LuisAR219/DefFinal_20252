@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/sprites">
+        <file>imagenes/Avion.png</file>
+        <file>imagenes/Bala.png</file>
+        <file>imagenes/Corriendo1.png</file>
+        <file>imagenes/Corriendo2.png</file>
+        <file>imagenes/Corriendo3.png</file>
+        <file>imagenes/Corriendo4.png</file>
+        <file>imagenes/Corriendo5.png</file>
+        <file>imagenes/Corriendo6.png</file>
+        <file>imagenes/Fuego.png</file>
+        <file>imagenes/Parado1.png</file>
+        <file>imagenes/fondo.png</file>
+    </qresource>
+    <qresource prefix="/audio">
+        <file>audio</file>
+        <file>C:/Users/Jorge/Downloads/musicaFondo.wav</file>
+    </qresource>
+</RCC>

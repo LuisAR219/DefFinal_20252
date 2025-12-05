@@ -8,7 +8,7 @@ Enemigo::Enemigo(QObject* parent,
                  float velocidadPatrulla_,
                  int danoChoque,
                  float radio)
-    : EntidadJuego(parent, posicionInicial, 1.0f, radio, ENEMIGO),
+    : EntidadJuego(parent, posicionInicial, 1.0f, 18.0f, ENEMIGO), // Radio más pequeño
     velocidadPatrulla(velocidadPatrulla_),
     dano(danoChoque),
     origenX(posicionInicial.x()),
@@ -53,7 +53,17 @@ bool Enemigo::colisionaCon(const EntidadJuego* otra) const {
 }
 
 void Enemigo::pintar(QPainter* p) {
-    static QPixmap sprite(":/imagenes/tanqueEne.png");
-    QRectF r(getPosicion().x() - 20, getPosicion().y() - 20, 40, 40);
-    p->drawPixmap(r.toRect(), sprite);
+    // Sprite a escala más pequeña y realista
+    QPixmap sprite(":/imagenes/tanqueEne.png");
+    if (!sprite.isNull()) {
+        // Tamaño reducido: 36x36px
+        QPixmap scaled = sprite.scaled(36, 36, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QRectF r(getPosicion().x() - 18, getPosicion().y() - 18, 36, 36);
+        p->drawPixmap(r.toRect(), scaled);
+    } else {
+        // Fallback: rectángulo rojo pequeño
+        p->setBrush(Qt::red);
+        p->setPen(QPen(Qt::black, 1));
+        p->drawRect(QRectF(getPosicion().x() - 18, getPosicion().y() - 18, 36, 36));
+    }
 }

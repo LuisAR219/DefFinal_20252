@@ -10,7 +10,7 @@ Barco::Barco(QObject* parent, int tipo_, const QVector2D& posInicial)
     case 0:
         vida = 30.0f;
         velocidadX = -70.0f;
-        radioColision = 22.0f; // ❌ Ya no se usa
+        radioColision = 22.0f;
         anchoSprite = 80.0f;
         altoSprite = 30.0f;
         anchoHitbox = 80.0f;
@@ -19,7 +19,7 @@ Barco::Barco(QObject* parent, int tipo_, const QVector2D& posInicial)
     case 1:
         vida = 60.0f;
         velocidadX = -50.0f;
-        radioColision = 34.0f; // ❌ Ya no se usa
+        radioColision = 34.0f;
         anchoSprite = 120.0f;
         altoSprite = 40.0f;
         anchoHitbox = 120.0f;
@@ -29,7 +29,7 @@ Barco::Barco(QObject* parent, int tipo_, const QVector2D& posInicial)
     default:
         vida = 120.0f;
         velocidadX = -30.0f;
-        radioColision = 48.0f; // ❌ Ya no se usa
+        radioColision = 48.0f;
         anchoSprite = 160.0f;
         altoSprite = 48.0f;
         anchoHitbox = 160.0f;
@@ -47,10 +47,13 @@ void Barco::actualizar(float dt) {
 }
 
 bool Barco::colisionaCon(const EntidadJuego* otra) const {
-    // ✅ Usamos hitbox en lugar de radioColision
+    float anchoHit = anchoHitbox * 10.8f;
+    float altoHit = altoHitbox * 10.2f;
+
     float dx = qAbs(otra->getPosicion().x() - posicion.x());
     float dy = qAbs(otra->getPosicion().y() - posicion.y());
-    return dx <= (anchoHitbox / 2.0f) && dy <= (altoHitbox / 2.0f);
+
+    return dx <= (anchoHit / 2.0f) && dy <= (altoHit / 2.0f);
 }
 
 void Barco::pintar(QPainter* pintor) {
@@ -66,7 +69,6 @@ void Barco::pintar(QPainter* pintor) {
     pintor->setPen(Qt::black);
     pintor->drawRect(QRectF(x, y, anchoSprite, altoSprite));
 
-    // Barra de vida
     float barraW = anchoSprite * 0.8f;
     float barraH = 6.0f;
     float barraX = posicion.x() - barraW/2.0f;

@@ -86,7 +86,7 @@ void GameWidget::inicializarNivel(int numeroNivel) {
     switch(numeroNivel) {
     case 1:
         nivel = new Nivel1(this);
-        tiempoRestante = 60;
+        tiempoRestante = 10; // Ahora 10 segundos
         vidaMax = 5;
         break;
     case 2:
@@ -153,7 +153,6 @@ void GameWidget::inicializarNivel(int numeroNivel) {
     connect(nivel, SIGNAL(nivelCompletado()), this, SLOT(mostrarVictoria()));
 
     nivelTimer.start(1000);
-
 
     if (nivelActual == 1) {
         Nivel1* nivel1 = dynamic_cast<Nivel1*>(nivel);
@@ -263,10 +262,10 @@ QRectF GameWidget::calcularRectanguloSprite(EntidadJuego* entidad, const QString
         return QRectF(pos.x() - sprite.width()/2, -180, sprite.width(), sprite.height());
     }
     else if (spriteKey == "tanque") {
-        return QRectF(pos.x() - 24, pos.y() - 24, 48, 48);
+        return QRectF(pos.x() - 18, pos.y() - 18, 36, 36); // Tamaño reducido
     }
     else if (spriteKey == "tanqueEne") {
-        return QRectF(pos.x() - 20, pos.y() - 20, 40, 40);
+        return QRectF(pos.x() - 18, pos.y() - 18, 36, 36); // Tamaño reducido
     }
     else if (spriteKey == "soldado") {
         return QRectF(pos.x() - 30, pos.y() - 40, 60, 80);
@@ -419,7 +418,7 @@ void GameWidget::onUpdate()
 
         QString spriteKey = obtenerSpriteKey(entidad);
 
-        // Barcos nivel 2 → sprite barco1.png 3× grande
+        // Barcos nivel 2 → hitbox más ancha proporcional al sprite
         if (Barco* barco = dynamic_cast<Barco*>(entidad)) {
             QPixmap spriteBarco = spriteCache["barco"];
             if (!spriteBarco.isNull()) {
@@ -430,10 +429,9 @@ void GameWidget::onUpdate()
                 item->setZValue(5);
                 scene->addItem(item);
 
-                // ✅ Hitbox mucho más grande que el sprite visual
-                float factor = 2.5f;
-                barco->setAnchoHitbox(scaled.width() * factor);
-                barco->setAltoHitbox(scaled.height() * factor);
+                // ⬇️ Hitbox más ancha que el sprite visual
+                barco->setAnchoHitbox(scaled.width() * 10.8f);
+                barco->setAltoHitbox(scaled.height() * 10.2f);
             } else {
                 QRectF rect(entidad->getPosicion().x() - 120, entidad->getPosicion().y() - 60, 240, 120);
                 QGraphicsRectItem* item = new QGraphicsRectItem(rect);
@@ -467,6 +465,9 @@ void GameWidget::onUpdate()
         if (spriteKey == "bomba" || spriteKey == "bombaLondres") {
             QPixmap scaled = spriteOriginal.scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             item->setPixmap(scaled);
+        } else if (spriteKey == "tanque" || spriteKey == "tanqueEne") {
+            QPixmap scaled = spriteOriginal.scaled(36, 36, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            item->setPixmap(scaled);
         } else {
             item->setPixmap(spriteOriginal);
         }
@@ -484,18 +485,13 @@ void GameWidget::onUpdate()
         scene->addItem(item);
     }
 
+    // Condiciones de victoria/derrota nivel 2
     if (nivelActual == 2) {
         Nivel2* nivel2 = qobject_cast<Nivel2*>(nivel);
         if (nivel2 && nivel2->getBarcosDerrotados() >= 4) {
-            emit nivelCompletado(); // ← Volver al menú principal
+            emit nivelCompletado();
             return;
         }
-    }
-
-
-    // ✅ Derrota por tiempo en nivel 2
-    if (nivelActual == 2) {
-        Nivel2* nivel2 = qobject_cast<Nivel2*>(nivel);
         if (nivel2 && tiempoRestante <= 0 && nivel2->getBarcosDerrotados() < 4) {
             mostrarDerrota();
             return;
@@ -512,16 +508,6 @@ void GameWidget::actualizarHUD() {
         Nivel1* nivel1 = dynamic_cast<Nivel1*>(nivel);
         if (nivel1 && explosionesHUD) {
             explosionesHUD->setText(QString("Enemigos: %1").arg(nivel1->contarEnemigosActivos()));
-        }
-    } else if (nivelActual == 2) {
-        Nivel2* nivel2 = dynamic_cast<Nivel2*>(nivel);
-        if (nivel2 && explosionesHUD) {
-            explosionesHUD->setText(QString("Barcos: %1/%2").arg(nivel2->getBarcosDerrotados()).arg(nivel2->getTotalBarcos()));
-        }
-    } else if (nivelActual == 3) {
-        NivelLondres* nivelLondres = dynamic_cast<NivelLondres*>(nivel);
-        if (nivelLondres && explosionesHUD) {
-            explosionesHUD->setText(QString("Explosiones: %1").arg(nivelLondres->getExplosionesRecibidas()));
         }
     }
 
@@ -599,7 +585,7 @@ void GameWidget::crearHUD() {
     if (estadoHUD) { scene->removeItem(estadoHUD); delete estadoHUD; }
     if (vidaBarra) { scene->removeItem(vidaBarra); delete vidaBarra; }
 
-    tiempoHUD = new QGraphicsSimpleTextItem("Tiempo: 60");
+    tiempoHUD = new QGraphicsSimpleTextItem("Tiempo: 10"); // Ahora empieza en 10
     tiempoHUD->setBrush(Qt::yellow);
     tiempoHUD->setFont(QFont("Arial", 16));
     tiempoHUD->setPos(10, 10);
@@ -622,5 +608,3 @@ void GameWidget::crearHUD() {
     vidaBarra->setBrush(QBrush(Qt::green));
     scene->addItem(vidaBarra);
 }
-
-

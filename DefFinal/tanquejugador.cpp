@@ -3,21 +3,18 @@
 #include <QPainter>
 #include <QDebug>
 
-TanqueJugador::TanqueJugador(QObject* parent,
-                             const QVector2D& posicionInicial)
-    : EntidadJuego(parent, posicionInicial, 50.0f, 22.0f, JUGADOR), // CORREGIDO
+TanqueJugador::TanqueJugador(QObject* parent, const QVector2D& posicionInicial)
+    : EntidadJuego(parent, posicionInicial, 50.0f, 18.0f, JUGADOR),
     velocidadY(0.0f),
     velocidadX(220.0f),
     distanciaRecorrida(0.0f),
-    minX(0.0f),
-    maxX(800.0f),
-    minY(0.0f),
-    maxY(600.0f)
+    minX(0.0f), maxX(800.0f),
+    minY(0.0f), maxY(600.0f)
 {
     sprite = QPixmap(":/imagenes/tanque.png");
-    anchoSprite = 48;
-    altoSprite  = 48;
-    setVida(100.0f);
+    anchoSprite = 36;
+    altoSprite = 36;
+    setVida(100.0f);          // 100 % seguro
 }
 
 void TanqueJugador::establecerLimites(float minX_, float maxX_, float minY_, float maxY_) {
@@ -36,7 +33,7 @@ void TanqueJugador::teclaLiberada(int key) {
 }
 
 void TanqueJugador::actualizar(float dt) {
-    QVector2D pos = getPosicion(); // CORREGIDO
+    QVector2D pos = getPosicion();
 
     if (teclasActivas.contains(Qt::Key_A))
         pos.setX(pos.x() - velocidadX * dt);
@@ -61,7 +58,7 @@ void TanqueJugador::actualizar(float dt) {
     if (pos.y() < minY) { pos.setY(minY); velocidadY = 0; }
     if (pos.y() > maxY) { pos.setY(maxY); velocidadY = 0; }
 
-    setPosicion(pos); // CORREGIDO
+    setPosicion(pos);
     distanciaRecorrida += qAbs(velocidadY * dt);
 }
 
@@ -70,14 +67,25 @@ void TanqueJugador::aplicarFuerza(const QVector2D& fuerza) {
 }
 
 bool TanqueJugador::colisionaCon(const EntidadJuego* otra) const {
-    float dist = (otra->getPosicion() - getPosicion()).length(); // CORREGIDO
-    return dist < (getRadioColision() + otra->getRadioColision()); // CORREGIDO
+    float dist = (otra->getPosicion() - getPosicion()).length();
+    return dist < (getRadioColision() + otra->getRadioColision());
 }
 
 void TanqueJugador::pintar(QPainter* p) {
-    QRectF rect(getPosicion().x() - anchoSprite/2, // CORREGIDO
-                getPosicion().y() - altoSprite/2,  // CORREGIDO
-                1.5*anchoSprite,
-                1.5*altoSprite);
-    p->drawPixmap(rect.toRect(), sprite);
+    // Dibujar sprite a escala más pequeña
+    QRectF rect(getPosicion().x() - anchoSprite / 2,
+                getPosicion().y() - altoSprite / 2,
+                anchoSprite,
+                altoSprite);
+
+    if (!sprite.isNull()) {
+        // Escalar sprite a tamaño pequeño y uniforme
+        QPixmap scaled = sprite.scaled(36, 36, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        p->drawPixmap(rect.toRect(), scaled);
+    } else {
+        // Fallback: rectángulo azul pequeño
+        p->setBrush(Qt::blue);
+        p->setPen(QPen(Qt::black, 1));
+        p->drawRect(rect);
+    }
 }

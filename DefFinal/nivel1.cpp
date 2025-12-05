@@ -65,8 +65,6 @@ void Nivel1::actualizar(float dt) {
     if (completado) return;
 
     tiempoNivel += dt;
-    tiempoDesdeUltimoSpawn += dt;
-    tiempoDesdeUltimoObstaculo += dt;
 
     // 1) Spawn programado de enemigos
     if (gestorSpawn) gestorSpawn->actualizar(dt);
@@ -81,12 +79,8 @@ void Nivel1::actualizar(float dt) {
 
         Obstaculo* obs = new Obstaculo(tipo, nullptr, QVector2D(x, 0.0f));
         obs->setParent(nullptr);
-
-        // Conectar señal de eliminación
         connect(obs, &Obstaculo::solicitudEliminar, this, &Nivel1::eliminarEntidad);
-
         entidades.append(obs);
-        qDebug() << "Nivel1: obstaculo tipo" << t << "spawn en X=" << x;
     }
 
     // 3) Mantener número mínimo de enemigos
@@ -97,27 +91,23 @@ void Nivel1::actualizar(float dt) {
         tiempoDesdeUltimoSpawn = 0.0f;
     }
 
-    // 4) Actualizar todas las entidades
-    for (EntidadJuego* e : entidades) {
-        e->actualizar(dt);
-    }
+    // 4) Actualizar entidades
+    for (EntidadJuego* e : entidades) e->actualizar(dt);
 
-    // 5) Verificar colisiones
-    verificarColisiones();
+    // 5) Verificar colisiones (solo después de 1.5 s)
+    if (tiempoNivel > 1.5f) verificarColisiones();
 
-    // 6) Eliminar entidades fuera de pantalla
+    // 6) Eliminar fuera de pantalla
     QVector<EntidadJuego*> aEliminar = recogerEntidadesAEliminar();
     for (EntidadJuego* en : aEliminar) eliminarEntidad(en);
 
-    // 7) Condiciones de victoria/derrota
+    // 7) Victoria / derrota
     if (jugador && jugador->obtenerDistanciaRecorrida() >= distanciaObjetivo) {
         completado = true;
-        qDebug() << "Nivel 1 completado!";
         emit nivelCompletado();
     }
     if (jugador && jugador->obtenerVida() <= 0.0f) {
         completado = true;
-        qDebug() << "Jugador eliminado. Nivel fallido.";
         emit nivelFallido();
     }
 }
@@ -151,7 +141,7 @@ void Nivel1::verificarColisiones() {
         // Proyectil impacta jugador
         if (auto* p = dynamic_cast<Proyectil*>(e)) {
             if (p->colisionaCon(jugador)) {
-                jugador->recibirDano(p->getDaño());
+                jugador->recibirDano(20);
                 eliminarEntidad(p);
                 continue;
             }

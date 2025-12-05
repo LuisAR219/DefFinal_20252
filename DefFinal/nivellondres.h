@@ -4,6 +4,8 @@
 #include "Nivel.h"
 #include "Soldado.h"
 #include "AvionEnemigo.h"
+#include "MotorAprendizaje.h"
+#include <QQueue>
 #include <QMap>
 #include <QPixmap>
 
@@ -20,13 +22,20 @@ public:
     int getExplosionesRecibidas() const;
     void resetearExplosiones();
 
+private slots:
+    void registrarPosicionJugador(const QVector2D& pos);
+
 private:
     Soldado* soldadoJugador;
-    float tiempoDisparo;
     AvionEnemigo* bombarderoEnemigo;
     int explosionesRecibidas;
     const int maxExplosionesPermitidas = 3;
     QMap<QString, QPixmap> spriteCache;
+    float tiempoDisparo;
+    float tiempoIA;
+    QQueue<QVector2D> historialJugador;
+    MotorAprendizaje motorIA;
+    const float intervaloIA = 0.5f;
 };
 
 #endif

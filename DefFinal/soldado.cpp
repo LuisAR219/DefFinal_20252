@@ -35,9 +35,7 @@ bool Soldado::colisionaCon(const EntidadJuego* otra) const {
     return dist < (getRadioColision() + otra->getRadioColision());
 }
 
-// IMPLEMENTACIÓN AÑADIDA
 void Soldado::pintar(QPainter* pintor) {
-    // Usar sprite del caché si está disponible, o un placeholder
     QPixmap sprite(":/imagenes/Parado1.png");
     if (!sprite.isNull()) {
         QRectF rect(getPosicion().x() - 30, getPosicion().y() - 30, 60, 60);
@@ -72,10 +70,4 @@ const QQueue<QVector2D>& Soldado::getHistorialMovimiento() const {
     return historialMovimiento;
 }
 
-void Soldado::registrarPosicion() {
-    historialMovimiento.enqueue(getPosicion());
-    const int maxMuestras = 60;
-    while (historialMovimiento.size() > maxMuestras) {
-        historialMovimiento.dequeue();
-    }
-}
+

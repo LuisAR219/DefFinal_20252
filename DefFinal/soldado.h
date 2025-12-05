@@ -21,6 +21,9 @@ public:
     void reaccionarAExplosión();
     const QQueue<QVector2D>& getHistorialMovimiento() const;
 
+signals:
+    void posicionRegistrada(const QVector2D& pos);
+
 private:
     float factorInercia;
     QQueue<QVector2D> historialMovimiento;

@@ -418,7 +418,6 @@ void GameWidget::onUpdate()
 
         QString spriteKey = obtenerSpriteKey(entidad);
 
-        // Barcos nivel 2 → hitbox más ancha proporcional al sprite
         if (Barco* barco = dynamic_cast<Barco*>(entidad)) {
             QPixmap spriteBarco = spriteCache["barco"];
             if (!spriteBarco.isNull()) {
@@ -429,7 +428,6 @@ void GameWidget::onUpdate()
                 item->setZValue(5);
                 scene->addItem(item);
 
-                // ⬇️ Hitbox más ancha que el sprite visual
                 barco->setAnchoHitbox(scaled.width() * 10.8f);
                 barco->setAltoHitbox(scaled.height() * 10.2f);
             } else {
